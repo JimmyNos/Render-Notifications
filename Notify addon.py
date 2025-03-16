@@ -418,6 +418,7 @@ class RenderNotifier:
             self.blender_data["Total_frames_to_render"] = self.total_frames
             #send_message_to_bot(blender_data)
             self.send_webhook_non_blocking(init=True)
+            self.send_webhook()
             #asyncio.run(Blender_hook(self.blender_data,True))
         
         elif self.current_frame != bpy.context.scene.frame_start and self.is_animation == False:
@@ -427,6 +428,7 @@ class RenderNotifier:
             self.blender_data["frame"] = self.current_frame
             #send_message_to_bot(blender_data)
             self.send_webhook_non_blocking(init=True)
+            self.send_webhook()
             #asyncio.run(Blender_hook(self.blender_data,True))
             
     def render_post(self,scene,*args):
@@ -515,6 +517,7 @@ class RenderNotifier:
             self.blender_data["avarage_time"] = str(self.avarage_time)[:-4]
             #send_message_to_bot(blender_data)
             self.send_webhook_non_blocking(frame=True)
+            self.send_webhook()
             #asyncio.run(Blender_hook(blender_data))
             print(self.blender_data)
             
@@ -571,6 +574,7 @@ class RenderNotifier:
             #send_message_to_bot(blender_data)
         
         self.send_webhook_non_blocking(finished=True)
+        self.send_webhook()
         #asyncio.run(Blender_hook(blender_data))
         
         self.is_animation = False
@@ -640,6 +644,7 @@ class RenderNotifier:
             
         
         self.send_webhook_non_blocking(canceled=True)
+        self.send_webhook()
         #send_message_to_bot(blender_data)
         #asyncio.run(Blender_hook(blender_data))
             
@@ -648,7 +653,7 @@ class RenderNotifier:
 
 
     #send json payload via webhook
-    def send_webhook(self,scene,*args):
+    def send_webhook(self):
         #self.WEBHOOK_URL = "http://127.0.0.1:5000/webhookcallback" #webhook to flask test server
         self.WEBHOOK_URL = "https://mosakohome.duckdns.org:8123/api/webhook/-blender3XsCcti0V19vzX-" #homeassistant
         #payload = json.dumps(self.blender_data, indent=4)
@@ -683,14 +688,10 @@ notifier = RenderNotifier()
 def register():
     bpy.app.handlers.render_init.append(notifier.render_init)
     bpy.app.handlers.render_post.append(notifier.render_post)
-    bpy.app.handlers.render_post.append(notifier.send_webhook)
     bpy.app.handlers.render_pre.append(notifier.render_pre)
-    bpy.app.handlers.render_pre.append(notifier.send_webhook)
     bpy.app.handlers.render_complete.append(notifier.complete)
     bpy.app.handlers.render_complete.append(notifier.notifi_desktop)
-    bpy.app.handlers.render_complete.append(notifier.send_webhook)
     bpy.app.handlers.render_cancel.append(notifier.cancel)
-    bpy.app.handlers.render_cancel.append(notifier.send_webhook)
     bpy.app.handlers.render_write.append(notifier.on_frame_render)
     
 def unregister():
