@@ -1,7 +1,89 @@
-import bpy # type: ignore
+bl_info = {
+    "name": "Render Notifications",
+    "author": "Michael Mosako",
+    "version": (1, 0),
+    "blender": (4, 0, 0),
+    "location": "Render properties",
+    "description": "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled.",
+    "category": "All"
+}
 
+
+import bpy # type: ignore
+from bpy.types import Operator, AddonPreferences,PropertyGroup,Panel # type: ignore
+from bpy.props import StringProperty, IntProperty, BoolProperty # type: ignore
+
+class RenderNotificationsPreferences(AddonPreferences):
+    bl_idname = __name__
+    
+    ## Desktop ##
+    desktop_sound_path: StringProperty( #type: ignore
+        name="Path to sound file",
+        description="Recive desktop notifications when the first frame has rendered.",
+        subtype = "FILE_PATH",
+        options = {"LIBRARY_EDITABLE"},
+        maxlen = 1024
+    )
+    
+    ## Discord ##
+    discord_webhook_name: StringProperty( #type: ignore
+        name="channel webhook name",
+        description="Recive desktop notifications when the first frame has rendered.",
+        default=""
+    )
+    discord_webhook_url: StringProperty( #type: ignore
+        name="Discord channel webhook url",
+        description="Recive desktop notifications when the first frame has rendered.",
+        default=""
+    )
+    tmp_output_path: StringProperty( #type: ignore
+        name="Default temporary output path",
+        description="Recive desktop notifications when the first frame has rendered.",
+        subtype = "FILE_PATH",
+        options = {"LIBRARY_EDITABLE"},
+        maxlen = 1024
+    )
+    
+    ## Webhook ##
+    webhook_url: StringProperty( #type: ignore
+        name="webhook url",
+        description="Recive desktop notifications when the first frame has rendered.",
+        default=""
+    )
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Setup notifications")
+        
+        ## Desktop ##
+        layout.label(text="Desktop notification")
+        row = layout.row()
+        row.label(text="Sound path:")
+        row.prop(self, "desktop_sound_path", text="")
+        
+        ## Discord ##
+        layout.label(text="")
+        layout.label(text="Discord notification")
+        row = layout.row()
+        row.label(text="Discord channel webhook name:")
+        row.prop(self, "discord_webhook_name", text="")
+        layout.label(text="Discord ")
+        row = layout.row()
+        row.label(text="Discord channel webhook url:")
+        row.prop(self, "discord_webhook_url", text="")
+        row = layout.row()
+        row.label(text="Default temporary save location:")
+        row.prop(self, "tmp_output_path", text="")
+        
+        ## Webhook ##
+        layout.label(text="")
+        layout.label(text="Webhook notification")
+        row = layout.row()
+        row.label(text="Webhook url:")
+        row.prop(self, "webhook_url", text="")
+    
 # Create a standalone property (not linked to anything)
-class RenderPanelProperties(bpy.types.PropertyGroup):
+class RenderNotificationsProperties(PropertyGroup):
     #desktop nitifications
     desktop_start: bpy.props.BoolProperty(
         name="Desktop notify on start",
@@ -63,9 +145,6 @@ class RenderPanelProperties(bpy.types.PropertyGroup):
     #    default=""
     #)  # type: ignore
 
-
-
-    
     
     #webhook notifications
     webhook_start: bpy.props.BoolProperty(
@@ -110,7 +189,7 @@ class RenderPanelProperties(bpy.types.PropertyGroup):
     )# type: ignore
 
 
-class PANEL_LayoutDemo(bpy.types.Panel):
+class RenderNotificationsRenderPanel(Panel):
     """Creates a Panel in the render properties tab"""
     bl_label = "Notifications"
     bl_idname = "RENDER_PT_LayoutDemo"
@@ -178,12 +257,12 @@ class PANEL_LayoutDemo(bpy.types.Panel):
 
 
 # Register & Unregister
-classes = [RenderPanelProperties, PANEL_LayoutDemo]
+classes = [RenderNotificationsProperties, RenderNotificationsRenderPanel, RenderNotificationsPreferences]
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.render_panel_props = bpy.props.PointerProperty(type=RenderPanelProperties)
+    bpy.types.Scene.render_panel_props = bpy.props.PointerProperty(type=RenderNotificationsProperties)
 
 def unregister():
     for cls in reversed(classes):
