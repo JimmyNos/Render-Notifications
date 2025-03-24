@@ -2,7 +2,7 @@ bl_info = {
     "name": "Render Notifications",
     "author": "Jimmy Nos",
     "version": (1, 0),
-    "blender": (4, 0, 0),
+    "blender": (2, 80, 0),
     "location": "Render properties",
     "description": "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled.",
     "category": "All"
@@ -122,6 +122,15 @@ class RenderNotificationsPreferences(AddonPreferences):
         row.label(text="Webhook url:")
         row.prop(self, "webhook_url", text="")
  
+# Update function for webhook settings
+def update_webhook_every_frame(self, context):
+    """Toggle all webhook settings when 'notify on every frame' is toggled"""
+    state = self.webhook_every_frame
+    self.webhook_start = state
+    self.webhook_first = state
+    self.webhook_completion = state
+    self.webhook_cancel = state
+
 class RenderNotificationsProperties(PropertyGroup):
     #desktop nitifications
     desktop_start: bpy.props.BoolProperty(
@@ -147,45 +156,20 @@ class RenderNotificationsProperties(PropertyGroup):
     
     
     #discord notifications
-    discord_start: bpy.props.BoolProperty(
-        name="Desktop notify on start",
-        description="Recive discord notifications when the render job starts.",
-        default=False  # Starts unchecked
-    ) # type: ignore
-    discord_first: bpy.props.BoolProperty(
-        name="Desktop notify on first",
-        description="Recive discord notifications when the first frame has rendered.",
-        default=False  # Starts unchecked
-    )# type: ignore
-    discord_completion: bpy.props.BoolProperty(
-        name="Desktop notify on completion",
-        description="Recive discord notifications when the render job is complete.",
-        default=False  # Starts unchecked
-    )# type: ignore
-    discord_cancel: bpy.props.BoolProperty(
-        name="Desktop notify on cancel",
-        description="Recive discord notifications when the render job is canceled.",
-        default=False  # Starts unchecked
-    )# type: ignore
     discord_preview: bpy.props.BoolProperty(
         name="Desktop notify with preview",
         description="Send the first and final frame to discord for an animation job, or a still image when a still render job is complete complete. Note: the default save location for the preview is set in the addon prefrences. if the size of the frame/still is larger than discord's allowed attachment size (with or without nitro), no preview will be sent.",
         default=False  # Starts unchecked
-    )# type: ignore
-    #discord_custom_tmp: bpy.props.BoolProperty(
-    #    name="Custom tmp save path",
-    #    description="Enable use custom tmp save path for preview frame for discord's embed message. Note: if the size of the frame is larger than discord allowed attachment size (with or without nitro), no preview will be sent.",
-    #    default=False  # Starts unchecked
-    #)# type: ignore
-    #discord_custom_tmp_output_path: bpy.props.StringProperty(
-    #    name="Custom rendered tmp save path",
-    #    description="Path to custom tmp save for discord's embed message preview frame. default is in the addon prefrences.",
-    #    subtype='FILE_PATH',
-    #    default=""
-    #)  # type: ignore
+    ) # type: ignore
 
     
     #webhook notifications
+    webhook_every_frame: bpy.props.BoolProperty(
+        name="Webhook notify on everyframe",
+        description="Recive webhook notifications on everyframe.",
+        default=False,  # Starts unchecked
+        update=update_webhook_every_frame
+    ) # type: ignore
     webhook_start: bpy.props.BoolProperty(
         name="Webhook notify on start",
         description="Recive webhook notifications when the render job starts.",
@@ -230,7 +214,7 @@ class RenderNotificationsProperties(PropertyGroup):
 class RenderNotificationsRenderPanel(Panel):
     """Creates a Panel in the render properties tab"""
     bl_label = "Notifications"
-    bl_idname = "RENDER_PT_LayoutDemo"
+    bl_idname = "RENDER_PT_Notifications"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "render"
@@ -260,7 +244,7 @@ class RenderNotificationsRenderPanel(Panel):
         # If checkbox is enabled, show additional settings
         if props.is_desktop:
             desktop_col = desktop_box.column()
-            desktop_col.label(text="Additional Settings:")
+            desktop_col.label(text="Configure Notifications:")
             desktop_col.prop(props, "desktop_start", text="notify on start")
             desktop_col.prop(props, "desktop_first", text="notify on first")
             desktop_col.prop(props, "desktop_completion", text="notify on completion")
@@ -268,26 +252,23 @@ class RenderNotificationsRenderPanel(Panel):
             
         if props.is_discord:
             discord_col = discord_box.column()
-            discord_col.label(text="Additional Settings:")
-            discord_col.prop(props, "discord_start", text="notify on start")
-            discord_col.prop(props, "discord_first", text="notify on first")
-            discord_col.prop(props, "discord_completion", text="notify on cancel")
-            discord_col.prop(props, "discord_cancel", text="notify on cancel")
-            discord_col.prop(props, "discord_preview", text="Enable discord notify")
+            discord_col.label(text="Configure Notifications:")
+            discord_col.prop(props, "discord_preview", text="Send previews")
         
         if props.is_webhook:
             webhook_col = webhook_box.column()
-            webhook_col.label(text="Additional Settings:")
+            webhook_col.label(text="Configure Notifications:")
+            webhook_col.prop(props, "webhook_every_frame", text="notify on everyframe")
             webhook_col.prop(props, "webhook_start", text="notify on start")
             webhook_col.prop(props, "webhook_first", text="notify on first")
-            webhook_col.prop(props, "webhook_completion", text="notify on cancel")
+            webhook_col.prop(props, "webhook_completion", text="notify on completion")
             webhook_col.prop(props, "webhook_cancel", text="notify on cancel")
 
         # Debugging: Print status when checkbox is clicked
-        if props.is_desktop:
-            layout.label(text="Checkbox is TICKED!", icon="CHECKMARK")
-        else:
-            layout.label(text="Checkbox is NOT ticked.", icon="CANCEL")
+        if bpy.context.scene.render_panel_props.webhook_every_frame:
+            layout.label(text="All Checkboxes is TICKED!", icon="CHECKMARK")
+        elif not bpy.context.scene.render_panel_props.webhook_every_frame:
+            layout.label(text="All Checkboxes is NOT ticked.", icon="CANCEL")
             
  
 DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1346076038387732480/50d-BremraDRbSfeHpvnbOYzpaFbhBskjEwj8uYj4u3sVDzwmH54XYHg5prAJpOMqhvy"
@@ -371,6 +352,8 @@ class RenderNotifier:
         notification = Notify()
         notification.title = "Render complete"
         notification.message = "Your Blender render is complete"
+        #if self.is_custom_sound:
+        #    notification.audio = self.desktop_sound_path
         notification.send()
 
     
@@ -417,7 +400,7 @@ class RenderNotifier:
                 try:
                     if self.blender_data['job_type'] == "Aniamtion": 
                         
-                        if self.no_preview == False:
+                        if self.no_preview == False and self.discord_preview:
                             try:
                                 if finished:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed,attachments=[self.file,self.thumbfile])
@@ -449,9 +432,9 @@ class RenderNotifier:
                                 await webhook.edit_message(self.message_id, embed=self.animation_embed)
                     else:
                         try:
-                            if finished:
+                            if finished and self.discord_preview:
                                 await webhook.edit_message(self.message_id, embed=self.still_embed,attachments=[self.file])
-                            elif canceled:
+                            elif canceled and self.discord_preview:
                                 await webhook.edit_message(self.message_id, embed=self.still_embed,attachments=[self.file])
                             else:
                                 await webhook.edit_message(self.message_id, embed=self.still_embed)
@@ -473,10 +456,10 @@ class RenderNotifier:
                     print(f"⚠️ Error updating message: {e}")
             else:
                 if self.blender_data['job_type'] == "Aniamtion": 
-                    msg = await webhook.send(embed=self.animation_embed, username="Blender Bot", wait=True)
+                    msg = await webhook.send(embed=self.animation_embed, username=self.discord_webhook_name, wait=True)
                     self.message_id = msg.id
                 else:
-                    msg = await webhook.send(embed=self.still_embed, username="Blender Bot", wait=True)
+                    msg = await webhook.send(embed=self.still_embed, username=self.discord_webhook_name, wait=True)
                     self.message_id = msg.id
     
     def send_webhook_non_blocking(self, init=False, frame=False, finished=False, canceled=False):
@@ -649,26 +632,25 @@ class RenderNotifier:
         self.blender_data["total_frames"] = self.total_frames
         
         ## Desktop ##
+        self.is_custom_sound = bpy.context.preferences.addons[__name__].preferences.custom_sound
         self.desktop_sound_path = bpy.context.preferences.addons[__name__].preferences.desktop_sound_path
         self.is_desktop = bpy.context.scene.render_panel_props.is_desktop
         self.desktop_start = bpy.context.scene.render_panel_props.desktop_start
         self.desktop_first = bpy.context.scene.render_panel_props.desktop_first
         self.desktop_completion = bpy.context.scene.render_panel_props.desktop_completion
         self.desktop_cancel = bpy.context.scene.render_panel_props.desktop_cancel
+        
         ## Discord ##
         self.tmp_output_path = bpy.context.preferences.addons[__name__].preferences.tmp_output_path
         self.discord_webhook_name = bpy.context.preferences.addons[__name__].preferences.discord_webhook_name
         self.discord_webhook_url = bpy.context.preferences.addons[__name__].preferences.discord_webhook_url
         self.is_discord = bpy.context.scene.render_panel_props.is_discord
-        self.discord_start = bpy.context.scene.render_panel_props.discord_start
-        self.discord_first = bpy.context.scene.render_panel_props.discord_first
-        self.discord_completion = bpy.context.scene.render_panel_props.discord_completion
-        self.discord_cancel = bpy.context.scene.render_panel_props.discord_cancel
         self.discord_preview = bpy.context.scene.render_panel_props.discord_preview
         
         ## Webhook ##
         self.webhook_url = bpy.context.preferences.addons[__name__].preferences.webhook_url
         self.is_webhook = bpy.context.scene.render_panel_props.is_webhook
+        self.webhook_every_frame = bpy.context.scene.render_panel_props.webhook_every_frame
         self.webhook_start = bpy.context.scene.render_panel_props.webhook_start
         self.webhook_first = bpy.context.scene.render_panel_props.webhook_first
         self.webhook_completion = bpy.context.scene.render_panel_props.webhook_completion
@@ -694,10 +676,10 @@ class RenderNotifier:
             if self.is_discord:
                 self.send_webhook_non_blocking(init=True)
             
-            if self.is_webhook:
+            if self.is_webhook and self.webhook_start:
                 self.send_webhook()
                 
-            if self.is_desktop:
+            if self.is_desktop and self.desktop_start:
                 # TODO
                 print("desktop checked")
             #asyncio.run(Blender_hook(self.blender_data,True))
@@ -711,10 +693,10 @@ class RenderNotifier:
             if self.is_discord:
                 self.send_webhook_non_blocking(init=True)
             
-            if self.is_webhook:
+            if self.is_webhook and self.webhook_start:
                 self.send_webhook()
                 
-            if self.is_desktop:
+            if self.is_desktop and self.desktop_start:
                 # TODO
                 print("desktop checked")
             #asyncio.run(Blender_hook(self.blender_data,True))
@@ -723,11 +705,12 @@ class RenderNotifier:
         self.blender_data["call_type"] = "render_post"
         
         self.current_frame = bpy.context.scene.frame_current
-        
+        first_frame = False
         if self.is_animation:
             #checks if the current frame is the first frame
             print(self.current_frame == bpy.context.scene.frame_start)
-            if self.current_frame == bpy.context.scene.frame_start:
+            first_frame = self.current_frame == bpy.context.scene.frame_start
+            if first_frame:
                 print("its the frist frame")
                 self.RENDER_FRIST_FRAME = datetime.now() - self.RENDER_START_TIME
                 self.precountdown = time.time() - self.render_start_countdown
@@ -807,10 +790,12 @@ class RenderNotifier:
             if self.is_discord:
                 self.send_webhook_non_blocking(frame=True)
             
-            if self.is_webhook:
+            if self.is_webhook and first_frame and self.webhook_first:
+                self.send_webhook()
+            elif self.webhook_every_frame:
                 self.send_webhook()
                 
-            if self.is_desktop:
+            if self.is_desktop and first_frame and self.desktop_first:
                 # TODO
                 print("desktop checked")
             #asyncio.run(Blender_hook(blender_data))
@@ -871,10 +856,10 @@ class RenderNotifier:
         if self.is_discord:
             self.send_webhook_non_blocking(finished=True)
         
-        if self.is_webhook:
+        if self.is_webhook and self.webhook_completion:
             self.send_webhook()
             
-        if self.is_desktop:
+        if self.is_desktop and self.desktop_completion:
             # TODO
             print("desktop checked")
         #asyncio.run(Blender_hook(blender_data))
@@ -948,10 +933,10 @@ class RenderNotifier:
         if self.is_discord:
             self.send_webhook_non_blocking(canceled=True)
         
-        if self.is_webhook:
+        if self.is_webhook and self.webhook_cancel:
             self.send_webhook()
             
-        if self.is_desktop:
+        if self.is_desktop and self.desktop_completion:
             # TODO
             print("desktop checked")
         #send_message_to_bot(blender_data)
@@ -963,14 +948,14 @@ class RenderNotifier:
 
     #send json payload via webhook
     def send_webhook(self):
-        #self.WEBHOOK_URL = "http://127.0.0.1:5000/webhookcallback" #webhook to flask test server
-        self.WEBHOOK_URL = "https://mosakohome.duckdns.org:8123/api/webhook/-blender3XsCcti0V19vzX-" #homeassistant
+        #self.webhook_url = "http://127.0.0.1:5000/webhookcallback" #webhook to flask test server
+        #self.webhook_url = "https://mosakohome.duckdns.org:8123/api/webhook/-blender3XsCcti0V19vzX-" #homeassistant
         #payload = json.dumps(self.blender_data, indent=4)
         payload = self.blender_data
         print(payload)
-        response = requests.post(self.WEBHOOK_URL, json=payload)
+        response = requests.post(self.webhook_url, json=payload)
         
-        r = requests.post(self.WEBHOOK_URL)
+        r = requests.post(self.webhook_url)
         
         if response.status_code == 200:
             print('Webhook sent successfully!')
