@@ -2,7 +2,7 @@ bl_info = {
     "name": "Render Notifications",
     "author": "Jimmy Nos",
     "version": (1, 0),
-    "blender": (2, 80, 0),
+    "blender": (4, 3, 2),
     "location": "Render properties",
     "description": "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled.",
     "category": "All"
@@ -23,26 +23,33 @@ import requests
 import socket
 
 from datetime import datetime
+import threading
 
 
 try:
     from notifypy import Notify
     from discord import Webhook, Embed
     import discord
-    import threading
     import aiohttp
     import asyncio
 except ImportError:
-    python_exe = sys.executable
-    target = os.path.join(sys.prefix, 'lib', 'site-packages')
-    
-    subprocess.call([python_exe, '-m', 'ensurepip'])
-    subprocess.call([python_exe, '-m', 'pip', 'install', '--upgrade', 'pip'])
-    # install required packages
-    subprocess.call([python_exe, '-m', 'pip', 'install', '--upgrade', 'notify-py', '-t', target])
-    subprocess.call([python_exe, '-m', 'pip', 'install', '--upgrade', 'discord', '-t', target])
-    subprocess.call([python_exe, '-m', 'pip', 'install', '--upgrade', 'aiohttp', '-t', target])
-    subprocess.call([python_exe, '-m', 'pip', 'install', '--upgrade', 'asyncio', '-t', target])
+        # Install a package to the user site-packages (if not already installed)
+    def install_if_missing(package):
+        try:
+            __import__(package)
+        except ImportError:
+            print("not imported")
+            subprocess.call([sys.executable, "-m", "pip", "install", "--user", package])
+
+        # Install packages you need
+    for pkg in ["notify-py", "discord", "aiohttp", "asyncio"]:
+        install_if_missing(pkg)    
+        
+    from notifypy import Notify
+    from discord import Webhook, Embed
+    import discord
+    import aiohttp
+    import asyncio
 
 os.system("cls")
 
@@ -506,10 +513,13 @@ class RenderNotifier:
         if isAniamtion: 
             print(self.blender_data["frames_rednered"])
             if self.blender_data["frames_rednered"] == 1:
-                self.file=discord.File(self.first_rendered_frame_path,filename="first_render.png")
-                atach = "attachment://first_render.png"
-                print(atach)
-                self.animation_embed.set_thumbnail(url=atach)
+                try:
+                    self.file=discord.File(self.first_rendered_frame_path,filename="first_render.png")
+                    atach = "attachment://first_render.png"
+                    print(atach)
+                    self.animation_embed.set_thumbnail(url=atach)
+                except Exception as e:
+                    print(f"An error occurred en_com: {e}")
                 
                 self.animation_embed.description += "\nFrist frame rendered"
                 self.animation_embed.set_field_at(index=3,name="Frame", value=self.blender_data['frame'], inline=False)
@@ -556,11 +566,14 @@ class RenderNotifier:
                 print(f"An error occurred en_com: {e}")
         else:
             try:
-                print(self.tmp_output_path)
-                self.file=discord.File(self.tmp_output_path,filename="render.png")
-                atach = "attachment://render.png"
-                print(atach)
-                self.still_embed.set_image(url=atach)
+                try:
+                    print(self.tmp_output_path)
+                    self.file=discord.File(self.tmp_output_path,filename="render.png")
+                    atach = "attachment://render.png"
+                    print(atach)
+                    self.still_embed.set_image(url=atach)
+                except Exception as e:
+                    print(f"An error occurred en_com: {e}")
                 self.still_embed.description += "\nRender complete"
                 self.still_embed.set_field_at(index=2, name="Total time elapsed", value=self.blender_data['total_time_elapsed'], inline=False)
                 self.still_embed.colour=discord.Colour.green()
@@ -575,17 +588,20 @@ class RenderNotifier:
         if isAniamtion: 
             try:
                 if "frames_rednered" in self.blender_data:
-                    if self.blender_data["frames_rednered"] > 1:
-                        if self.no_preview == False:
-                            self.thumbfile=discord.File(self.first_rendered_frame_path,filename="first_render.png")
-                            thumbatach = "attachment://first_render.png"
-                            self.animation_embed.set_thumbnail(url=thumbatach)
-                    else:
-                        if self.no_preview == False:
-                            self.file=discord.File(self.tmp_output_path,filename="cencel_render.png")
-                            atach = "attachment://cencel_render.png"
-                            print(atach)
-                            self.animation_embed.set_image(url=atach)
+                    try:
+                        if self.blender_data["frames_rednered"] > 1:
+                            if self.no_preview == False:
+                                self.thumbfile=discord.File(self.first_rendered_frame_path,filename="first_render.png")
+                                thumbatach = "attachment://first_render.png"
+                                self.animation_embed.set_thumbnail(url=thumbatach)
+                        else:
+                            if self.no_preview == False:
+                                self.file=discord.File(self.tmp_output_path,filename="cencel_render.png")
+                                atach = "attachment://cencel_render.png"
+                                print(atach)
+                                self.animation_embed.set_image(url=atach)
+                    except Exception as e:
+                        print(f"An error occurred en_com: {e}")
                     self.animation_embed.description += "\nCanceled"
                     self.animation_embed.set_field_at(index=3,name="Frame", value=self.blender_data['current_frame'], inline=True)
                     self.animation_embed.add_field(name="Still to render", value="("+str(self.blender_data['frames_still_to_render'])+"/"+str(self.blender_data['total_frames'])+")", inline=False)
@@ -603,12 +619,15 @@ class RenderNotifier:
             except Exception as e:
                 print(f"An error occurred in cancel: {e}")  
         else:
-            print(self.tmp_output_path)
-            self.file=discord.File(self.tmp_output_path,filename="cencel_render.png")
-            atach = "attachment://cencel_render.png"
-            print(atach)
+            try:
+                print(self.tmp_output_path)
+                self.file=discord.File(self.tmp_output_path,filename="cencel_render.png")
+                atach = "attachment://cencel_render.png"
+                print(atach)
+                self.still_embed.set_image(url=atach)
+            except Exception as e:
+                print(f"An error occurred en_com: {e}")
             self.still_embed.description += "\nCanceled"
-            self.still_embed.set_image(url=atach)
             self.still_embed.add_field(name="Job Cancelled", value=str(self.blender_data['RENDER_CANCELLED_TIME']), inline=False)
             self.still_embed.set_footer(text="[X_ X)")
             self.still_embed.colour=discord.Colour.red()
