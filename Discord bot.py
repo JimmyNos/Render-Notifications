@@ -238,7 +238,7 @@ async def printer(interaction: discord.Integration, printer: str, num: int):
 embed = None
 @client.tree.command(name="embed", description="embed demo!",guild=GUILD_ID)
 async def myEmbed(interaction: discord.Integration):
-    embed = discord.Embed(title="Title", url="https://youtu.be/xm3YgoEiEDc?si=4RLumVh6pSjwLBc_", description="*Alots* of **things** here", color=discord.Color.gold())
+    embed = discord.Embed(title="Title", url="https://youtu.be/xm3YgoEiEDc?si=4RLumVh6pSjwLBc_", description="*Alots* of **things** here <t:165132515:R>", color=discord.Color.gold())
     embed.set_thumbnail(url="https://ddz4ak4pa3d19.cloudfront.net/cache/6a/53/6a5314d57ccb486a5f71423783eda7f4.jpg")
     embed.add_field(name="Field 1 *title*", value="A work of art!", inline=False)
     embed.add_field(name="Field 2 title", value="Stuff *here* idk", inline=True)

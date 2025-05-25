@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Render Notifications",
     "author": "Jimmy Nos",
-    "version": (1, 0),
+    "version": (1, 2, 3),
     "blender": (4, 3, 2),
     "location": "Render properties",
     "description": "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled.",
@@ -74,12 +74,12 @@ class RenderNotificationsPreferences(AddonPreferences):
     discord_webhook_name: StringProperty( #type: ignore
         name="channel webhook name",
         description="Recive desktop notifications when the first frame has rendered.",
-        default=""
+        default="Render Bot"
     )
     discord_webhook_url: StringProperty( #type: ignore
         name="Discord channel webhook url",
         description="Recive desktop notifications when the first frame has rendered.",
-        default=""
+        default="https://discord.com/api/webhooks/1346076038387732480/50d-BremraDRbSfeHpvnbOYzpaFbhBskjEwj8uYj4u3sVDzwmH54XYHg5prAJpOMqhvy"
     )
     tmp_output_path: StringProperty( #type: ignore
         name="Default temporary output path",
@@ -94,7 +94,7 @@ class RenderNotificationsPreferences(AddonPreferences):
     webhook_url: StringProperty( #type: ignore
         name="webhook url",
         description="Recive desktop notifications when the first frame has rendered.",
-        default=""
+        default="https://mosakohome.duckdns.org:8123/api/webhook/-blender3XsCcti0V19vzX-"
     )
     
     def draw(self, context):
@@ -317,6 +317,7 @@ class RenderNotifier:
         self.no_preview = False
         self.rendered_frame_path = ""
         #self.first_rendered_frame_path = ""
+        self.file_extension = ".png"
         
         
         
@@ -400,25 +401,34 @@ class RenderNotifier:
             webhook = Webhook.from_url(self.discord_webhook_url, session=session)
             if self.message_id:
                 try:
+                    full_hook = await webhook.fetch()
                     if self.blender_data['job_type'] == "Aniamtion": 
                         
-                        if self.no_preview == False and self.discord_preview:
+                        if self.discord_preview:
                             try:
                                 if finished:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed,attachments=[self.file,self.thumbfile])
+                                    
+                                    await self.send_on_complete(full_hook, webhook)
                                 elif canceled:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed,attachments=[self.file,self.thumbfile])
+                                    
+                                    await self.send_on_cancel(full_hook, webhook)
                                 elif self.blender_data["frames_rednered"] == 1:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed,attachments=[self.file])
                                 else:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
                             except Exception as e:
-                                print(f"error when failed with image embed: {e}")
+                                print(f"error. failed with image embed: {e}")
                                 self.animation_embed.description+= "\n render too large for preview or failed to save."
                                 if finished:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
+                                    
+                                    await self.send_on_complete(full_hook, webhook)
                                 elif canceled:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
+                                    
+                                    await self.send_on_cancel(full_hook, webhook)
                                 elif self.blender_data["frames_rednered"] == 1:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
                                 else:
@@ -426,8 +436,12 @@ class RenderNotifier:
                         else:
                             if finished:
                                 await webhook.edit_message(self.message_id, embed=self.animation_embed)
+                                
+                                await self.send_on_complete(full_hook, webhook)
                             elif canceled:
                                 await webhook.edit_message(self.message_id, embed=self.animation_embed)
+                                
+                                await self.send_on_cancel(full_hook, webhook)
                             elif self.blender_data["frames_rednered"] == 1:
                                 await webhook.edit_message(self.message_id, embed=self.animation_embed)
                             else:
@@ -436,19 +450,27 @@ class RenderNotifier:
                         try:
                             if finished and self.discord_preview:
                                 await webhook.edit_message(self.message_id, embed=self.still_embed,attachments=[self.file])
+                                
+                                await self.send_on_complete(full_hook, webhook)
                             elif canceled and self.discord_preview:
                                 await webhook.edit_message(self.message_id, embed=self.still_embed,attachments=[self.file])
+                                
+                                await self.send_on_cancel(full_hook, webhook)
                             else:
                                 await webhook.edit_message(self.message_id, embed=self.still_embed)
                         except:
                             self.still_embed.description+= "\n image too large for preview"
                             if finished:
                                 await webhook.edit_message(self.message_id, embed=self.still_embed)
+                                
+                                await self.send_on_complete(full_hook, webhook)
                             elif canceled:
                                 await webhook.edit_message(self.message_id, embed=self.still_embed)
+                                
+                                await self.send_on_cancel(full_hook, webhook)
                             else:
                                 await webhook.edit_message(self.message_id, embed=self.still_embed)
-                        
+                                             
                     if canceled or finished:
                         #self.animation_embed.clear_fields()
                         #self.still_embed.clear_fields()
@@ -460,9 +482,28 @@ class RenderNotifier:
                 if self.blender_data['job_type'] == "Aniamtion": 
                     msg = await webhook.send(embed=self.animation_embed, username=self.discord_webhook_name, wait=True)
                     self.message_id = msg.id
+                    
                 else:
                     msg = await webhook.send(embed=self.still_embed, username=self.discord_webhook_name, wait=True)
                     self.message_id = msg.id
+                    
+    async def send_on_complete(self, full_hook=None, webhook=None):
+        print(f"full_hook.guild_id: {full_hook.guild_id}, full_hook.channel_id: {full_hook.channel_id}, self.message_id: {self.message_id}")
+        message_link = f"https://discord.com/channels/{full_hook.guild_id}/{full_hook.channel_id}/{self.message_id}"
+        reply_content = f"{message_link}"
+        print(f"reply_content: {reply_content}")
+        self.complete_embed.description += f"\n## {reply_content}"
+        await webhook.send(username=self.discord_webhook_name, embed=self.complete_embed)
+        print("reply sent")
+        
+    async def send_on_cancel(self, full_hook=None, webhook=None):
+        print(f"full_hook.guild_id: {full_hook.guild_id}, full_hook.channel_id: {full_hook.channel_id}, self.message_id: {self.message_id}")
+        message_link = f"https://discord.com/channels/{full_hook.guild_id}/{full_hook.channel_id}/{self.message_id}"
+        reply_content = f"{message_link}"
+        print(f"reply_content: {reply_content}")
+        self.cancel_embed.description += f"\n## {reply_content}"
+        await webhook.send(username=self.discord_webhook_name, embed=self.cancel_embed)
+        print("reply sent")
     
     def send_webhook_non_blocking(self, init=False, frame=False, finished=False, canceled=False):
         """Schedule webhook execution using a separate thread-safe event loop."""
@@ -476,8 +517,18 @@ class RenderNotifier:
     def em_init(self,isAniamtion):
         
         #global blender, render_embed
-        self.animation_embed = Embed(title=self.blender_data['project_name'], description="Starting render job..", colour=discord.Colour.blue())
-        self.still_embed = Embed(title=self.blender_data['project_name'], description="Starting render job..", colour=discord.Colour.gold())
+        self.animation_embed = Embed(title=self.blender_data['project_name'], description=f"Starting render job.. <t:{int(self.render_start_countdown)}:R>", colour=discord.Colour.blue())
+        self.still_embed = Embed(title=self.blender_data['project_name'], description=f"Starting render job.. <t:{int(self.render_start_countdown)}:R>", colour=discord.Colour.gold())
+        
+        self.complete_embed = Embed(title="*Render completed :checkered_flag: :white_check_mark:*", 
+                               description=f"Render job for {self.blender_data['project_name']} completed successfully!", 
+                               colour=discord.Colour.light_embed(),
+                               timestamp=discord.utils.utcnow())
+        
+        self.cancel_embed = Embed(title="*Render canceled :flag_black: :anger: :x:*", 
+                               description=f"Render job for {self.blender_data['project_name']} was cancel!", 
+                               colour=discord.Colour.light_embed(),
+                               timestamp=discord.utils.utcnow())
         
         print("Starting")
         #while len(render_embed.fields) <= 9:
@@ -512,6 +563,9 @@ class RenderNotifier:
 
         if isAniamtion: 
             print(self.blender_data["frames_rednered"])
+            
+            self.frames_rendered_feild = "("+str(self.blender_data['frames_rednered'])+"/"+str(self.blender_data['total_frames'])+") "+str(self.blender_data['rednered_frames_percentage'])+"%"
+            print(self.frames_rendered_feild)
             if self.blender_data["frames_rednered"] == 1:
                 try:
                     self.file=discord.File(self.first_rendered_frame_path,filename="first_render.png")
@@ -520,10 +574,12 @@ class RenderNotifier:
                     self.animation_embed.set_thumbnail(url=atach)
                 except Exception as e:
                     print(f"An error occurred en_com: {e}")
+                    
+                
                 
                 self.animation_embed.description += "\nFrist frame rendered"
                 self.animation_embed.set_field_at(index=3,name="Frame", value=self.blender_data['frame'], inline=False)
-                self.animation_embed.set_field_at(index=4,name="frames rendered", value="("+str(self.blender_data['frames_rednered'])+"/"+str(self.blender_data['total_frames'])+")", inline=True)
+                self.animation_embed.set_field_at(index=4,name="frames rendered", value=self.frames_rendered_feild, inline=True)
                 self.animation_embed.set_field_at(index=5,name="Frame time", value=self.blender_data['RENDER_FRIST_FRAME'], inline=True)
                 self.animation_embed.set_field_at(index=6,name="Est. next frame", value=self.blender_data['next_frame_countdown'], inline=True)
                 self.animation_embed.set_field_at(index=8,name="Est. render job" + self.blender_data['countdown'], value=self.blender_data['est_render_job'], inline=False)
@@ -532,7 +588,7 @@ class RenderNotifier:
                 self.animation_embed.set_footer(text= "(。>︿<)_θ")
             else:
                 self.animation_embed.set_field_at(index=3,name="Frame", value=self.blender_data['frame'], inline=False)
-                self.animation_embed.set_field_at(index=4,name="frames rendered", value="("+str(self.blender_data['frames_rednered'])+"/"+str(self.blender_data['total_frames'])+")", inline=True)
+                self.animation_embed.set_field_at(index=4,name="frames rendered", value=self.frames_rendered_feild, inline=True)
                 self.animation_embed.set_field_at(index=5,name="Frame time", value=self.blender_data['RENDER_CURRENT_FRAME'], inline=True)
                 self.animation_embed.set_field_at(index=6,name="Est. next frame", value=self.blender_data['next_frame_countdown'], inline=True)
                 self.animation_embed.set_field_at(index=7,name="Avarage per frame", value=f"{self.blender_data['avarage_time']}", inline=True)
@@ -595,7 +651,7 @@ class RenderNotifier:
                                 thumbatach = "attachment://first_render.png"
                                 self.animation_embed.set_thumbnail(url=thumbatach)
                         else:
-                            if self.no_preview == False:
+                            if self.self.no_preview == False:
                                 self.file=discord.File(self.tmp_output_path,filename="cencel_render.png")
                                 atach = "attachment://cencel_render.png"
                                 print(atach)
@@ -641,11 +697,12 @@ class RenderNotifier:
         self.blend_filepath = bpy.data.filepath
         self.blend_filename = os.path.basename(self.blend_filepath) if self.blend_filepath else "Untitled.blend"
         self.blend_filename = self.blend_filename[:-6]
-        self.tmp_output_name = self.blend_filename + " first frame"
+        self.tmp_output_name = self.blend_filename
         self.tmp_output_name_frist = self.blend_filename + " first frame"
         
         self.RENDER_START_TIME = datetime.now()
         self.render_start_countdown = time.time()
+        
         self.total_frames = bpy.context.scene.frame_end - bpy.context.scene.frame_start + 1
         
         self.blender_data["call_type"] = "render_init"
@@ -750,30 +807,31 @@ class RenderNotifier:
                 
                 #self.first_rendered_frame_path = bpy.path.abspath(scene.render.frame_path())
                 scene = bpy.context.scene
-                render = scene.render
-                is_movie_format = render.is_movie_format
-                if is_movie_format == False and bpy.context.scene.render.file_extension == ".png":
-                    self.file_extension = bpy.context.scene.render.file_extension
-                else:
-                    self.no_preview = True
+                #render = scene.render
+                #is_movie_format = render.is_movie_format
+                #if is_movie_format == False and bpy.context.scene.render.file_extension == ".png":
+                #    self.file_extension = bpy.context.scene.render.file_extension
+                #else:
+                #    self.no_preview = True
                 
-                if not self.no_preview:
-                    #render_path = render.filepath
-                    #print(render_path)
-                    image = bpy.data.images['Render Result']
-                    
-                    self.tmp_output_name_frist += self.file_extension
-                    #self.first_filename = os.path.basename(render_path)
-                    self.first_rendered_frame_path += self.tmp_output_name_frist
-                    print(self.first_rendered_frame_path)
-                    image.save_render(self.first_rendered_frame_path)
-                    #print(self.first_filename)
-                    print(self.first_rendered_frame_path)
+                
+                #render_path = render.filepath
+                #print(render_path)
+                image = bpy.data.images['Render Result']
+                
+                self.tmp_output_name_frist += self.file_extension
+                #self.first_filename = os.path.basename(render_path)
+                self.first_rendered_frame_path += self.tmp_output_name_frist
+                print(self.first_rendered_frame_path)
+                image.save_render(self.first_rendered_frame_path)
+                #print(self.first_filename)
+                print(self.first_rendered_frame_path)
                 
                 self.blender_data["RENDER_FRIST_FRAME"] = str(self.RENDER_FRIST_FRAME)[:-4]
                 self.blender_data["est_render_job"] = str(self.RENDER_FRIST_FRAME * (self.total_frames - self.counter))[:-4]
                 self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
                 self.blender_data["frames_rednered"] = self.counter
+                self.blender_data["rednered_frames_percentage"] = self.counter / self.total_frames * 100
                 self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
                 self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
                 
@@ -801,6 +859,7 @@ class RenderNotifier:
                     self.blender_data["RENDER_CURRENT_FRAME"] = str(self.RENDER_CURRENT_FRAME)[:-4]
                     self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
                     self.blender_data["frames_rednered"] = self.counter
+                    self.blender_data["rednered_frames_percentage"] = self.counter / self.total_frames * 100
                     self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
                     self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
 
@@ -857,27 +916,25 @@ class RenderNotifier:
         scene = bpy.context.scene
         render = scene.render
         print(self.tmp_output_path)
-        is_movie_format = render.is_movie_format
-        print(is_movie_format)
-        if is_movie_format == False: #and bpy.context.scene.render.file_extension == ".png":
-            self.file_extension = bpy.context.scene.render.file_extension
-            print(f"file_extension:{self.file_extension}")
-        else:
-            self.no_preview = True
+        #is_movie_format = render.is_movie_format
+        #print(is_movie_format)
+        #if is_movie_format == False: #and bpy.context.scene.render.file_extension == ".png":
+        #    self.file_extension = bpy.context.scene.render.file_extension
+        #    print(f"file_extension:{self.file_extension}")
+        #else:
+        #    self.no_preview = True
         
         if self.is_animation:
+            #render_path = render.filepath
+            #print(render_path)
+            image = bpy.data.images['Render Result']
             
-            if not self.no_preview:
-                #render_path = render.filepath
-                #print(render_path)
-                image = bpy.data.images['Render Result']
-                
-                self.tmp_output_name += self.file_extension
-                #self.render_filename = os.path.basename(render_path)
-                self.tmp_output_path += self.tmp_output_name
-                image.save_render(self.tmp_output_path)
-                
-                #print("in complete an: "+self.render_filename)
+            self.tmp_output_name += self.file_extension
+            #self.render_filename = os.path.basename(render_path)
+            self.tmp_output_path += self.tmp_output_name
+            image.save_render(self.tmp_output_path)
+            
+            #print("in complete an: "+self.render_filename)
             self.blender_data["avarage_time"] = str(self.avarage_time)[:-4]
             self.blender_data["total_Est_time"] = str(self.RENDER_FRIST_FRAME * self.total_frames)[:-4]
             self.blender_data["total_time_elapsed"] = str(self.RENDER_TOTAL_TIME)[:-4]
@@ -885,22 +942,20 @@ class RenderNotifier:
             #send_message_to_bot(blender_data)
             #asyncio.run.Blender_hook(blender_data)
         else:
+            #render_path = render.filepath
+            #print(render_path)
+            image = bpy.data.images['Render Result']
             
-            if not self.no_preview:
-                #render_path = render.filepath
-                #print(render_path)
-                image = bpy.data.images['Render Result']
+            #print(is_movie_format)
+            
+            self.tmp_output_name += self.file_extension  # Default to PNG if no extension
+            #self.render_filename = os.path.basename(render_path)
+            print(f"tmp_output_name:{self.tmp_output_name}")
+            self.tmp_output_path += self.tmp_output_name
+            print(f"tmp_output_path:{self.tmp_output_path}")
+            image.save_render(self.tmp_output_path)
                 
-                print(is_movie_format)
-                if not is_movie_format:
-                    self.tmp_output_name += self.file_extension  # Default to PNG if no extension
-                    #self.render_filename = os.path.basename(render_path)
-                    print(f"tmp_output_name:{self.tmp_output_name}")
-                    self.tmp_output_path += self.tmp_output_name
-                    print(f"tmp_output_path:{self.tmp_output_path}")
-                    image.save_render(self.tmp_output_path)
-                    
-                #print(self.render_filename)
+            #print(self.render_filename)
             self.blender_data["total_time_elapsed"] = str(self.RENDER_TOTAL_TIME)[:-4]
             #send_message_to_bot(blender_data)
         
@@ -938,28 +993,24 @@ class RenderNotifier:
         scene = bpy.context.scene
         render = scene.render
         print(self.tmp_output_path)
-        is_movie_format = render.is_movie_format
-        if is_movie_format == False: #and bpy.context.scene.render.file_extension == ".png":
-            file_extension = bpy.context.scene.render.file_extension
-        else:
-            self.no_preview = True
+        #is_movie_format = render.is_movie_format
+        #if is_movie_format == False: #and bpy.context.scene.render.file_extension == ".png":
+        #    file_extension = bpy.context.scene.render.file_extension
+        #else:
+        #    self.no_preview = True
         
         if self.is_animation:
             render_path = render.filepath
             print(render_path)
             image = bpy.data.images['Render Result']
             
-            
-            if not is_movie_format:
-                #render_path += file_extension  # Default to PNG if no extension
-                #self.render_filename = os.path.basename(render_path)
-                try:
-                    self.tmp_output_path += self.tmp_output_name
-                    image.save_render(self.tmp_output_path)
-                except Exception as e:
-                    print(f"error while saving image: {e}")
-                    self.animation_embed.description += "\nno priview could be saved"
-                    self.no_preview = True
+            try:
+                self.tmp_output_path += self.tmp_output_name
+                image.save_render(self.tmp_output_path)
+            except Exception as e:
+                print(f"error while saving image: {e}")
+                self.animation_embed.description += "\nno priview could be saved"
+                self.no_preview = True
                 
             #print(self.render_filename)
             self.blender_data["current_frame"] = cancel_frame
@@ -969,18 +1020,18 @@ class RenderNotifier:
             self.blender_data["RENDER_CANCELLED_TIME"] = str(self.RENDER_CANCELLED_TIME)[:-4]
             
         else:
-            if not self.no_preview:
-                #render_path = render.filepath
-                #print(render_path)
-                image = bpy.data.images['Render Result']
+            
+            #render_path = render.filepath
+            #print(render_path)
+            image = bpy.data.images['Render Result']
+            
+            
+            self.tmp_output_name += self.file_extension  # Default to PNG if no extension
+            #self.render_filename = os.path.basename(render_path)
+            self.tmp_output_path += self.tmp_output_name
+            image.save_render(self.tmp_output_path)
                 
-                if not is_movie_format:
-                    self.tmp_output_name += file_extension  # Default to PNG if no extension
-                    #self.render_filename = os.path.basename(render_path)
-                    self.tmp_output_path += self.tmp_output_name
-                    image.save_render(self.tmp_output_path)
-                    
-                #print(self.render_filename)
+            #print(self.render_filename)
             self.blender_data["RENDER_CANCELLED_TIME"] = str(self.RENDER_CANCELLED_TIME)[:-4]
             
         
