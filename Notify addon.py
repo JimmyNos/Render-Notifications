@@ -552,7 +552,7 @@ class RenderNotifier:
             self.still_embed.add_field(name="Job type", value=self.blender_data['job_type'], inline=True)
             self.still_embed.add_field(name="Frame", value=self.blender_data['frame'], inline=True)
             self.still_embed.add_field(name="Total time elapsed", value="...", inline=False)
-            self.still_embed.set_footer(text="*(^◕.◕^)*")
+            self.still_embed.set_footer(text="(。>︿<)_θ")
        
     def em_post(self,isAniamtion):
         
