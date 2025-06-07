@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Render Notifications",
     "author": "Jimmy Nos",
-    "version": (1, 2, 3),
+    "version": (0, 1, 6),
     "blender": (4, 3, 2),
     "location": "Render properties",
     "description": "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled.",
@@ -169,6 +169,14 @@ class RenderNotificationsProperties(PropertyGroup):
         description="Send the first and final frame to discord for an animation job, or a still image when a still render job is complete complete. Note: the default save location for the preview is set in the addon prefrences. if the size of the frame/still is larger than discord's allowed attachment size (with or without nitro), no preview will be sent.",
         default=False  # Starts unchecked
     ) # type: ignore
+    discord_preview_path: bpy.props.StringProperty( #type: ignore
+        name="Desktop notify previe wfile",
+        description="Recive desktop notifications when the first frame has rendered.",
+        subtype = "FILE_PATH",
+        options = {"LIBRARY_EDITABLE"},
+        default = "C:/tmp/",
+        maxlen = 1024
+    )
 
     
     #webhook notifications
@@ -262,6 +270,7 @@ class RenderNotificationsRenderPanel(Panel):
             discord_col = discord_box.column()
             discord_col.label(text="Configure Notifications:")
             discord_col.prop(props, "discord_preview", text="Send previews")
+            discord_col.prop(props, "discord_preview_path", text="Previews save location") 
         
         if props.is_webhook:
             webhook_col = webhook_box.column()
@@ -367,7 +376,7 @@ class RenderNotifier:
         if self.end:
             self.loop.stop()
     
-    #send message or edit embeded message
+    #senda a new discord message or edit embeded message
     async def send_or_update_embed(self, init=False, frame=False, finished=False, canceled=False):
         """Send a new webhook message or update the existing one."""
         if init:
@@ -415,7 +424,7 @@ class RenderNotifier:
                                     
                                     await self.send_on_cancel(full_hook, webhook)
                                 elif self.blender_data["frames_rednered"] == 1:
-                                    await webhook.edit_message(self.message_id, embed=self.animation_embed,attachments=[self.file])
+                                    await webhook.edit_message(self.message_id, embed=self.first_frame_embed,attachments=[self.file])
                                 else:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
                             except Exception as e:
@@ -430,7 +439,7 @@ class RenderNotifier:
                                     
                                     await self.send_on_cancel(full_hook, webhook)
                                 elif self.blender_data["frames_rednered"] == 1:
-                                    await webhook.edit_message(self.message_id, embed=self.animation_embed)
+                                    await webhook.edit_message(self.message_id, embed=self.first_frame_embed)
                                 else:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
                         else:
@@ -443,7 +452,7 @@ class RenderNotifier:
                                 
                                 await self.send_on_cancel(full_hook, webhook)
                             elif self.blender_data["frames_rednered"] == 1:
-                                await webhook.edit_message(self.message_id, embed=self.animation_embed)
+                                await webhook.edit_message(self.message_id, embed=self.first_frame_embed)
                             else:
                                 await webhook.edit_message(self.message_id, embed=self.animation_embed)
                     else:
@@ -480,10 +489,12 @@ class RenderNotifier:
                     print(f"⚠️ Error updating message: {e}")
             else:
                 if self.blender_data['job_type'] == "Aniamtion": 
-                    msg = await webhook.send(embed=self.animation_embed, username=self.discord_webhook_name, wait=True)
+                    msg = await webhook.send(embed=self.first_frame_embed, username=self.discord_webhook_name, wait=True)
                     self.message_id = msg.id
                     
                 else:
+                    if self.isfirst_frame:
+                        msg = await webhook.send(embed=self.first_frame_embed, username=self.discord_webhook_name, wait=True)
                     msg = await webhook.send(embed=self.still_embed, username=self.discord_webhook_name, wait=True)
                     self.message_id = msg.id
                     
@@ -519,6 +530,7 @@ class RenderNotifier:
         #global blender, render_embed
         self.animation_embed = Embed(title=self.blender_data['project_name'], description=f"Starting render job.. <t:{int(self.render_start_countdown)}:R>", colour=discord.Colour.blue())
         self.still_embed = Embed(title=self.blender_data['project_name'], description=f"Starting render job.. <t:{int(self.render_start_countdown)}:R>", colour=discord.Colour.gold())
+        self.first_frame_embed = Embed(title=self.blender_data['project_name'], description=f"Starting render job.. <t:{int(self.render_start_countdown)}:R>", colour=discord.Colour.blue())
         
         self.complete_embed = Embed(title="*Render completed :checkered_flag: :white_check_mark:*", 
                                description=f"Render job for {self.blender_data['project_name']} completed successfully!", 
@@ -548,6 +560,20 @@ class RenderNotifier:
             self.animation_embed.add_field(name="Total time elapsed", value="...", inline=True)
             self.animation_embed.set_footer(text="*(^◕.◕^)*")
             #self.render_embed.set_field_at(index=3,name="Frame edit", value=blender['frame'], inline=False)
+            
+            self.first_frame_embed.add_field(name="Job type", value="???", inline=False)
+            self.first_frame_embed.add_field(name="Total frames", value=self.blender_data['total_frames'], inline=True)
+            self.first_frame_embed.add_field(name="Frame Range", value=self.blender_data['frame_range'], inline=True)
+            self.first_frame_embed.add_field(name="Frame", value=self.blender_data['frame'], inline=True)
+            self.first_frame_embed.add_field(name="Total est. time", value="...", inline=True)
+            self.first_frame_embed.add_field(name="Total time elapsed", value="...", inline=False)
+            self.first_frame_embed.set_footer(text="*(^◕.◕^)*")
+            
+            if self.isfirst_frame:
+                self.still_embed.add_field(name="Job type", value=self.blender_data['job_type'], inline=True)
+                self.still_embed.add_field(name="Frame", value=self.blender_data['frame'], inline=True)
+                self.still_embed.add_field(name="Total time elapsed", value="...", inline=False)
+                self.still_embed.set_footer(text="(。>︿<)_θ")
         else: 
             self.still_embed.add_field(name="Job type", value=self.blender_data['job_type'], inline=True)
             self.still_embed.add_field(name="Frame", value=self.blender_data['frame'], inline=True)
@@ -572,6 +598,7 @@ class RenderNotifier:
                     atach = "attachment://first_render.png"
                     print(atach)
                     self.animation_embed.set_thumbnail(url=atach)
+                    self.first_frame_embed.set_thumbnail(url=atach)
                 except Exception as e:
                     print(f"An error occurred en_com: {e}")
                     
@@ -631,6 +658,7 @@ class RenderNotifier:
                 except Exception as e:
                     print(f"An error occurred en_com: {e}")
                 self.still_embed.description += "\nRender complete"
+                self.still_embed.set_field_at(index=0,name="Job type", value=self.blender_data['job_type'], inline=True)
                 self.still_embed.set_field_at(index=2, name="Total time elapsed", value=self.blender_data['total_time_elapsed'], inline=False)
                 self.still_embed.colour=discord.Colour.green()
                 self.still_embed.set_footer(text="( *︾▽︾)")
@@ -684,6 +712,7 @@ class RenderNotifier:
             except Exception as e:
                 print(f"An error occurred en_com: {e}")
             self.still_embed.description += "\nCanceled"
+            self.still_embed.set_field_at(index=0,name="Job type", value=self.blender_data['job_type'], inline=True)
             self.still_embed.add_field(name="Job Cancelled", value=str(self.blender_data['RENDER_CANCELLED_TIME']), inline=False)
             self.still_embed.set_footer(text="[X_ X)")
             self.still_embed.colour=discord.Colour.red()
@@ -718,8 +747,17 @@ class RenderNotifier:
         self.desktop_completion = bpy.context.scene.render_panel_props.desktop_completion
         self.desktop_cancel = bpy.context.scene.render_panel_props.desktop_cancel
         
+        print(f"preferences path: {bpy.context.preferences.addons[__name__].preferences.tmp_output_path}")
+        print(f"render_panel_props path: {bpy.context.scene.render_panel_props.discord_preview_path}")
         ## Discord ##
-        self.tmp_output_path = bpy.context.preferences.addons[__name__].preferences.tmp_output_path
+        ## Check if tmp_output_path is the same as discord_preview_path
+        if bpy.context.preferences.addons[__name__].preferences.tmp_output_path == bpy.context.scene.render_panel_props.discord_preview_path:
+            self.tmp_output_path = bpy.context.preferences.addons[__name__].preferences.tmp_output_path
+            print("tmp_output_path is the same as discord_preview_path")
+        elif bpy.context.preferences.addons[__name__].preferences.tmp_output_path != bpy.context.scene.render_panel_props.discord_preview_path:
+            self.tmp_output_path = bpy.context.scene.render_panel_props.discord_preview_path
+            print("tmp_output_path is NOT the same as discord_preview_path")
+        print(f"tmp_output_path: {self.tmp_output_path}")
         self.first_rendered_frame_path = bpy.context.preferences.addons[__name__].preferences.tmp_output_path
         self.discord_webhook_name = bpy.context.preferences.addons[__name__].preferences.discord_webhook_name
         self.discord_webhook_url = bpy.context.preferences.addons[__name__].preferences.discord_webhook_url
@@ -739,12 +777,14 @@ class RenderNotifier:
         print(bpy.context.scene.frame_current)
             
         print(self.blender_data)
-
-    
+ 
+    #handle render pre logic
     @persistent
     def render_pre(self,scene,*args):
+        print("\nPre Render\n")
         self.current_frame = bpy.context.scene.frame_current
         self.blender_data["frame"] = bpy.context.scene.frame_current
+        self.isfirst_frame = self.current_frame == bpy.context.scene.frame_start
         print(self.current_frame)
         if self.current_frame == bpy.context.scene.frame_start:
             self.is_animation = True
@@ -761,8 +801,12 @@ class RenderNotifier:
                 self.send_webhook()
                 
             if self.is_desktop and self.desktop_start:
-                # TODO
+                self.notifi_desktop(
+                    title="Render started", 
+                    message="Render job started for: " + self.blender_data["project_name"]
+                    )
                 print("desktop checked")
+                
             #asyncio.run(Blender_hook(self.blender_data,True))
         
         elif self.current_frame != bpy.context.scene.frame_start and self.is_animation == False:
@@ -778,13 +822,17 @@ class RenderNotifier:
                 self.send_webhook()
                 
             if self.is_desktop and self.desktop_start:
-                # TODO
+                self.notifi_desktop(
+                    title="Render started", 
+                    message="Render job started for: " + self.blender_data["project_name"]
+                    )
                 print("desktop checked")
             #asyncio.run(Blender_hook(self.blender_data,True))
     
-    
+    #handle render post logic
     @persistent   
     def render_post(self,scene,*args):
+        print("\nPost Render\n")
         self.blender_data["call_type"] = "render_post"
         
         self.current_frame = bpy.context.scene.frame_current
@@ -831,7 +879,7 @@ class RenderNotifier:
                 self.blender_data["est_render_job"] = str(self.RENDER_FRIST_FRAME * (self.total_frames - self.counter))[:-4]
                 self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
                 self.blender_data["frames_rednered"] = self.counter
-                self.blender_data["rednered_frames_percentage"] = self.counter / self.total_frames * 100
+                self.blender_data["rednered_frames_percentage"] = round((self.counter / self.total_frames * 100),2)
                 self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
                 self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
                 
@@ -859,7 +907,7 @@ class RenderNotifier:
                     self.blender_data["RENDER_CURRENT_FRAME"] = str(self.RENDER_CURRENT_FRAME)[:-4]
                     self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
                     self.blender_data["frames_rednered"] = self.counter
-                    self.blender_data["rednered_frames_percentage"] = self.counter / self.total_frames * 100
+                    self.blender_data["rednered_frames_percentage"] = round((self.counter / self.total_frames * 100),2)
                     self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
                     self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
 
@@ -887,9 +935,12 @@ class RenderNotifier:
                 self.send_webhook()
             elif self.webhook_every_frame:
                 self.send_webhook()
-                
+            
             if self.is_desktop and first_frame and self.desktop_first:
-                # TODO
+                self.notifi_desktop(
+                    title="First frame rendered", 
+                    message=f"First frame rendered for: {self.blender_data['project_name']} \ntime: {self.blender_data['RENDER_FRIST_FRAME']} \nEst. render job: {self.blender_data['est_render_job']}"
+                    )
                 print("desktop checked")
             #asyncio.run(Blender_hook(blender_data))
             print(self.blender_data)
@@ -899,7 +950,7 @@ class RenderNotifier:
     
     @persistent
     def on_frame_render(self,scene, *args):
-        
+        print("\nOn Frame Render\n")
         if self.current_frame == bpy.context.scene.frame_start:
             None
             print("is first frame")
@@ -908,9 +959,10 @@ class RenderNotifier:
 
         print(f"Frame saved at: {self.rendered_frame_path}")
     
-    
+    #handle render complete logic
     @persistent
     def complete(self,scene,*args):
+        print("\nRender Complete\n")
         self.RENDER_TOTAL_TIME = datetime.now() - self.RENDER_START_TIME
         self.blender_data["call_type"] = "complete"
         scene = bpy.context.scene
@@ -923,6 +975,12 @@ class RenderNotifier:
         #    print(f"file_extension:{self.file_extension}")
         #else:
         #    self.no_preview = True
+        
+        if self.current_frame == bpy.context.scene.frame_start:
+            self.is_animation = False
+            self.job_type = "Still"
+            self.blender_data["job_type"] = self.job_type
+            print("comp is first frame")
         
         if self.is_animation:
             #render_path = render.filepath
@@ -966,7 +1024,10 @@ class RenderNotifier:
             self.send_webhook()
             
         if self.is_desktop and self.desktop_completion:
-            # TODO
+            self.notifi_desktop(
+                title="Render completed", 
+                message=f"Render job completed for: {self.blender_data['project_name']} \nTotal time elapsed: {self.blender_data['total_time_elapsed']}"
+                )
             print("desktop checked")
         #asyncio.run(Blender_hook(blender_data))
         
@@ -982,7 +1043,7 @@ class RenderNotifier:
         
         print(self.blender_data)
 
-    
+    #handle render cancel logic
     @persistent
     def cancel(self,scene,*args):
         self.RENDER_CANCELLED_TIME = datetime.now() - self.RENDER_START_TIME
@@ -998,6 +1059,12 @@ class RenderNotifier:
         #    file_extension = bpy.context.scene.render.file_extension
         #else:
         #    self.no_preview = True
+        
+        if self.current_frame == bpy.context.scene.frame_start:
+            self.is_animation = False
+            self.job_type = "Still"
+            self.blender_data["job_type"] = self.job_type
+            print("comp is first frame")
         
         if self.is_animation:
             render_path = render.filepath
@@ -1042,7 +1109,10 @@ class RenderNotifier:
             self.send_webhook()
             
         if self.is_desktop and self.desktop_cancel:
-            # TODO
+            self.notifi_desktop(
+                title="Render canceled", 
+                message=f"Render job canceled for: {self.blender_data['project_name']} \nRender canceled after: {self.RENDER_CANCELLED_TIME}"
+                )
             print("desktop checked")
         #send_message_to_bot(blender_data)
         #asyncio.run(Blender_hook(blender_data))
@@ -1071,13 +1141,13 @@ class RenderNotifier:
             print(response.text)
     
     @persistent
-    def notifi_desktop(scene,*args):
+    def notifi_desktop(self,*args,title,message):
         print("\n Notifing via desktop \n")
         notification = Notify()
-        notification.title = "Render complete"
-        notification.message = "Your Blender render is complete"
-        #if self.is_custom_sound:
-        #    notification.audio = self.desktop_sound_path
+        notification.title = title
+        notification.message = message
+        if self.is_custom_sound:
+            notification.audio = self.desktop_sound_path
         notification.send()
 
 
@@ -1096,7 +1166,7 @@ def register():
     bpy.app.handlers.render_post.append(notifier.render_post)
     bpy.app.handlers.render_pre.append(notifier.render_pre)
     bpy.app.handlers.render_complete.append(notifier.complete)
-    bpy.app.handlers.render_complete.append(notifier.notifi_desktop)
+    #bpy.app.handlers.render_complete.append(notifier.notifi_desktop)
     bpy.app.handlers.render_cancel.append(notifier.cancel)
     bpy.app.handlers.render_write.append(notifier.on_frame_render)
     
@@ -1108,7 +1178,7 @@ def unregister():
     bpy.app.handlers.render_post.remove(notifier.render_post)
     bpy.app.handlers.render_pre.remove(notifier.render_pre)
     bpy.app.handlers.render_complete.remove(notifier.complete)
-    bpy.app.handlers.render_complete.remove(notifier.notifi_desktop)
+    #bpy.app.handlers.render_complete.remove(notifier.notifi_desktop)
     bpy.app.handlers.render_cancel.remove(notifier.cancel)
     bpy.app.handlers.render_write.remove(notifier.on_frame_render)
 
