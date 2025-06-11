@@ -1,11 +1,11 @@
 bl_info = {
     "name": "Render Notifications",
-    "author": "Jimmy NoStar",
-    "version": (0, 1, 10),
+    "author": "JimmyNoStar",
+    "version": (1, 0, 0),
     "blender": (4, 3, 2),
     "location": "Render properties",
     "description": "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled.",
-    "category": "All"
+    "category": "Render"
 }
 
 import time
@@ -73,13 +73,11 @@ class RenderNotificationsPreferences(AddonPreferences):
     ## Discord ##
     discord_webhook_name: StringProperty( #type: ignore
         name="channel webhook name",
-        description="Name of discotrd bot that will send the notifications.",
-        default="Render Bot" # remove before release!
+        description="Name of discotrd bot that will send the notifications."
     )
     discord_webhook_url: StringProperty( #type: ignore
         name="Discord channel webhook url",
-        description="Discord channel webhook url to send notifications to.",
-        default="https://discord.com/api/webhooks/1346076038387732480/50d-BremraDRbSfeHpvnbOYzpaFbhBskjEwj8uYj4u3sVDzwmH54XYHg5prAJpOMqhvy" # remove before release!
+        description="Discord channel webhook url to send notifications to."
     )
     tmp_output_path: StringProperty( #type: ignore
         name="Default temporary output path",
@@ -93,8 +91,7 @@ class RenderNotificationsPreferences(AddonPreferences):
     ## Webhook ##
     webhook_url: StringProperty( #type: ignore
         name="webhook url",
-        description="Webhook url to send notifications to.",
-        default="https://mosakohome.duckdns.org:8123/api/webhook/-blender3XsCcti0V19vzX-" # remove before release!
+        description="Webhook url to send notifications to."
     )
     
     # Drawing UI for addon preferences
@@ -426,7 +423,7 @@ class RenderNotifier:
                                     
                                     await self.send_on_cancel(full_hook, webhook)
                                 elif self.blender_data["frames_rendered"] == 1:
-                                    await webhook.edit_message(self.message_id, embed=self.first_frame_embed,attachments=[self.file])
+                                    await webhook.edit_message(self.message_id, embed=self.animation_embed,attachments=[self.file])
                                 else:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
                             except Exception as e:
@@ -442,7 +439,7 @@ class RenderNotifier:
                                     
                                     await self.send_on_cancel(full_hook, webhook)
                                 elif self.blender_data["frames_rendered"] == 1:
-                                    await webhook.edit_message(self.message_id, embed=self.first_frame_embed)
+                                    await webhook.edit_message(self.message_id, embed=self.animation_embed)
                                 else:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
                         else:
@@ -455,25 +452,38 @@ class RenderNotifier:
                                 
                                 await self.send_on_cancel(full_hook, webhook)
                             elif self.blender_data["frames_rendered"] == 1:
-                                await webhook.edit_message(self.message_id, embed=self.first_frame_embed)
+                                await webhook.edit_message(self.message_id, embed=self.animation_embed)
                             else:
                                 await webhook.edit_message(self.message_id, embed=self.animation_embed)
                     else:
                         # Send still embed if the job is not an animation
-                        try:
-                            if finished and self.discord_preview:
-                                await webhook.edit_message(self.message_id, embed=self.still_embed,attachments=[self.file])
-                                
-                                await self.send_on_complete(full_hook, webhook)
-                            elif canceled and self.discord_preview:
-                                await webhook.edit_message(self.message_id, embed=self.still_embed,attachments=[self.file])
-                                
-                                await self.send_on_cancel(full_hook, webhook)
-                            else:
-                                await webhook.edit_message(self.message_id, embed=self.still_embed)
-                        except:
-                            # If the embed is too large or an error is cought, try to send it without the image
-                            self.still_embed.description+= "\n image too large for preview"
+                        if self.discord_preview:
+                            try:
+                                if finished:
+                                    await webhook.edit_message(self.message_id, embed=self.still_embed,attachments=[self.file])
+                                    
+                                    await self.send_on_complete(full_hook, webhook)
+                                elif canceled:
+                                    await webhook.edit_message(self.message_id, embed=self.still_embed,attachments=[self.file])
+                                    
+                                    await self.send_on_cancel(full_hook, webhook)
+                                else:
+                                    await webhook.edit_message(self.message_id, embed=self.still_embed)
+                            except Exception as e:
+                                # If the embed is too large or an error is cought, try to send it without the image
+                                print(f"Error occurred while embedding image in Discord webhook: {e}. This might be due to file size limitations or an invalid file path.")
+                                self.still_embed.description+= "\n render too large for preview or failed to save."
+                                if finished:
+                                    await webhook.edit_message(self.message_id, embed=self.still_embed)
+                                    
+                                    await self.send_on_complete(full_hook, webhook)
+                                elif canceled:
+                                    await webhook.edit_message(self.message_id, embed=self.still_embed)
+                                    
+                                    await self.send_on_cancel(full_hook, webhook)
+                                else:
+                                    await webhook.edit_message(self.message_id, embed=self.still_embed)
+                        else:
                             if finished:
                                 await webhook.edit_message(self.message_id, embed=self.still_embed)
                                 
@@ -484,6 +494,7 @@ class RenderNotifier:
                                 await self.send_on_cancel(full_hook, webhook)
                             else:
                                 await webhook.edit_message(self.message_id, embed=self.still_embed)
+                        
                     
                     # If the job is finished or canceled, clear the message_id                  
                     if canceled or finished:
@@ -506,26 +517,27 @@ class RenderNotifier:
                 else:
                     if self.isfirst_frame:
                         msg = await webhook.send(embed=self.first_frame_embed, username=self.discord_webhook_name, wait=True)
-                    msg = await webhook.send(embed=self.still_embed, username=self.discord_webhook_name, wait=True)
+                    else:
+                        msg = await webhook.send(embed=self.still_embed, username=self.discord_webhook_name, wait=True)
                     self.message_id = msg.id
     
     # Send a discord message when the render job is complete         
     async def send_on_complete(self, full_hook=None, webhook=None):
-        #print(f"full_hook.guild_id: {full_hook.guild_id}, full_hook.channel_id: {full_hook.channel_id}, self.message_id: {self.message_id}")
+        print(f"full_hook.guild_id: {full_hook.guild_id}, full_hook.channel_id: {full_hook.channel_id}, self.message_id: {self.message_id}")
         message_link = f"https://discord.com/channels/{full_hook.guild_id}/{full_hook.channel_id}/{self.message_id}"
         reply_content = f"{message_link}" # link to main message
         self.complete_embed.description += f"\n## {reply_content}"
         await webhook.send(username=self.discord_webhook_name, embed=self.complete_embed)
-        #print("reply sent")
+        print("reply sent")
     
     # Send a discord message when the render job is canceled
     async def send_on_cancel(self, full_hook=None, webhook=None):
-        #print(f"full_hook.guild_id: {full_hook.guild_id}, full_hook.channel_id: {full_hook.channel_id}, self.message_id: {self.message_id}")
+        print(f"full_hook.guild_id: {full_hook.guild_id}, full_hook.channel_id: {full_hook.channel_id}, self.message_id: {self.message_id}")
         message_link = f"https://discord.com/channels/{full_hook.guild_id}/{full_hook.channel_id}/{self.message_id}"
         reply_content = f"{message_link}" # link to main message
         self.cancel_embed.description += f"\n## {reply_content}"
         await webhook.send(username=self.discord_webhook_name, embed=self.cancel_embed)
-        #print("reply sent")
+        print("reply sent")
     
     # handle discord webhook using a separate thread-safe event loop
     def send_webhook_non_blocking(self, init=False, frame=False, finished=False, canceled=False):
@@ -707,7 +719,7 @@ class RenderNotifier:
                     except Exception as e:
                         print(f"An error occurred en_com: {e}")
                     self.animation_embed.description += "\nCanceled"
-                    self.animation_embed.set_field_at(index=3,name="Frame", value=self.blender_data['current_frame'], inline=True)
+                    self.animation_embed.set_field_at(index=3,name="Unfinished Frame", value=self.blender_data['current_frame'], inline=True)
                     self.animation_embed.add_field(name="Still to render", value="("+str(self.blender_data['frames_still_to_render'])+"/"+str(self.blender_data['total_frames'])+")", inline=False)
                     self.animation_embed.add_field(name="Job Cancelled", value=self.blender_data['RENDER_CANCELLED_TIME'], inline=False)
                     self.animation_embed.set_footer(text="[X_ X)")
