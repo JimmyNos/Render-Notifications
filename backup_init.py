@@ -40,6 +40,30 @@ import asyncio
 from datetime import datetime
 import threading
 
+Notify = None
+discord = None
+aiohttp = None
+DiscordWebhook = None
+DiscordEmbed = None
+
+# Will try to import the required packages, if not installed, will set them to None
+try:
+    import discord
+    from discord import Webhook, Embed
+    import aiohttp
+    from notifypy import Notify as NotifyClass
+    
+    Notify = NotifyClass
+    DiscordWebhook = Webhook
+    DiscordEmbed = Embed
+    
+    #import pil #remove
+except ImportError:
+    Notify = None
+    discord = None
+    aiohttp = None
+    print("⚠️ Missing packages: notifypy, discord.py, or aiohttp")
+
 def install_package(pkg_name):
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "install", pkg_name])
@@ -63,8 +87,6 @@ class RenderNotifications_OT_InstallDeps(bpy.types.Operator):
             self.report({'INFO'}, "Dependencies installed successfully.")
             bpy.context.preferences.addons[__name__].preferences.is_installed = True
             bpy.context.preferences.addons[__name__].preferences.installed_msg = "Libraries are now installed (please reload the addon)"
-            self.report({'INFO'}, "Dependencies installed. Please disable and re-enable the addon.")
-
         else:
             self.report({'ERROR'}, "Failed to install one or more packages.")
         return {'FINISHED'}
@@ -377,10 +399,10 @@ class RenderNotifier:
         self.tmp_output_name = ""
         self.tmp_output_name_frist = ""
         
-        
-        self.still_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
-        self.first_frame_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
-        self.animation_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
+        if DiscordEmbed:
+            self.still_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
+            self.first_frame_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
+            self.animation_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
 
         self.end = False
         # Start an asyncio event loop in a separate thread
@@ -929,17 +951,19 @@ class RenderNotifier:
             self.blender_data["frame_range"] = f"{bpy.context.scene.frame_start} - {bpy.context.scene.frame_end}"
             self.blender_data["Total_frames_to_render"] = self.total_frames
             
-            if self.is_discord:
-                self.send_webhook_non_blocking(init=True)
+            if discord and aiohttp:
+                if self.is_discord:
+                    self.send_webhook_non_blocking(init=True)
             
             if self.is_webhook and self.webhook_start:
                 self.send_webhook()
-              
-            if self.is_desktop and self.desktop_start:
-                self.notifi_desktop(
-                    title="Render started", 
-                    message="Render job started for: " + self.blender_data["project_name"]
-                    )
+            
+            if Notify:  
+                if self.is_desktop and self.desktop_start:
+                    self.notifi_desktop(
+                        title="Render started", 
+                        message="Render job started for: " + self.blender_data["project_name"]
+                        )
         
         # if the current frame is not the first frame, it is a still image render job
         elif self.current_frame != bpy.context.scene.frame_start and self.is_animation == False:
@@ -1286,8 +1310,7 @@ class RenderNotifier:
 # register
 ##################################
 
-#RenderNotifier = None  # placeholder for later
-
+RenderNotifier = RenderNotifier()
 
 
 classes = [
@@ -1299,71 +1322,37 @@ classes = [
 
 # Register all components and event handlers
 def register():
-    global Notify, discord, aiohttp, DiscordWebhook, DiscordEmbed
-    
-
-
-    # Try to import optional dependencies
-    try:
-        import discord
-        import aiohttp
-        from notifypy import Notify as NotifyClass
-        from discord import Webhook as DiscordWebhookClass, Embed as DiscordEmbedClass
-
-        Notify = NotifyClass
-        DiscordWebhook = DiscordWebhookClass
-        DiscordEmbed = DiscordEmbedClass
-
-    except ImportError:
-        Notify = None
-        discord = None
-        aiohttp = None
-        DiscordWebhook = None
-        DiscordEmbed = None
-        print("⚠️ Optional libraries missing: notify-py, discord.py, aiohttp")
-
-    # Register UI and data classes
+    # Register custom classes (panel, properties, preferences)
     for cls in classes:
         bpy.utils.register_class(cls)
-
+        
+    # Add the custom property group to the Scene type
     bpy.types.Scene.render_panel_props = bpy.props.PointerProperty(type=RenderNotificationsProperties)
 
-    global RenderNotifier
-    RenderNotifier = RenderNotifier()  # Only create it after all deps are loaded
-    # Only register handlers if dependencies are available
-    if None not in (Notify, DiscordWebhook, aiohttp):
-        
-        bpy.app.handlers.render_init.append(RenderNotifier.render_init)         # Called when render starts
-        bpy.app.handlers.render_post.append(RenderNotifier.render_post)         # Called after each frame is rendered
-        bpy.app.handlers.render_pre.append(RenderNotifier.render_pre)           # Called just before rendering starts
-        bpy.app.handlers.render_complete.append(RenderNotifier.complete)        # Called when render finishes   
-        bpy.app.handlers.render_cancel.append(RenderNotifier.cancel)            # Called if render is cancelled
-        bpy.app.handlers.render_write.append(RenderNotifier.on_frame_render)    # Called when a frame is written to disk
-    else:
-        print("⚠️ Skipping handler registration due to missing libraries.")
-        
+    # Attach custom handlers to Blender's render events
+    bpy.app.handlers.render_init.append(RenderNotifier.render_init)       # Called when render starts
+    bpy.app.handlers.render_post.append(RenderNotifier.render_post)       # Called after each frame is rendered
+    bpy.app.handlers.render_pre.append(RenderNotifier.render_pre)         # Called just before rendering starts
+    bpy.app.handlers.render_complete.append(RenderNotifier.complete)      # Called when render finishes
+    bpy.app.handlers.render_cancel.append(RenderNotifier.cancel)          # Called if render is cancelled
+    bpy.app.handlers.render_write.append(RenderNotifier.on_frame_render)  # Called when a frame is written to disk
+    
 # Unregister all components and handlers
 def unregister():
-    # Unregister in reverse order
+    # Unregister in reverse order to prevent dependency issues
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-
-    if hasattr(bpy.types.Scene, "render_panel_props"):
-        del bpy.types.Scene.render_panel_props
-
-    # Safely remove handlers
-    for handler_list, func in [
-        (bpy.app.handlers.render_init, RenderNotifier.render_init),
-        (bpy.app.handlers.render_post, RenderNotifier.render_post),
-        (bpy.app.handlers.render_pre, RenderNotifier.render_pre),
-        (bpy.app.handlers.render_complete, RenderNotifier.complete),
-        (bpy.app.handlers.render_cancel, RenderNotifier.cancel),
-        (bpy.app.handlers.render_write, RenderNotifier.on_frame_render),
-    ]:
-        try:
-            handler_list.remove(func)
-        except ValueError:
-            pass  # Already removed or never registered
+        
+    # Remove the custom property from the Scene type
+    del bpy.types.Scene.render_panel_props
+     
+    # Detach all event handlers
+    bpy.app.handlers.render_init.remove(RenderNotifier.render_init)
+    bpy.app.handlers.render_post.remove(RenderNotifier.render_post)
+    bpy.app.handlers.render_pre.remove(RenderNotifier.render_pre)
+    bpy.app.handlers.render_complete.remove(RenderNotifier.complete)
+    bpy.app.handlers.render_cancel.remove(RenderNotifier.cancel)
+    bpy.app.handlers.render_write.remove(RenderNotifier.on_frame_render)
 
 # Blender add-ons are registered and unregistered using Blender's add-on system.
 # Run registration when script is executed directly
