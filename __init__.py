@@ -375,7 +375,9 @@ class RenderNotifier:
         self.is_webhook = False
         self.is_desktop = False
         self.tmp_output_path = ""
+        self.final_path = ""
         self.first_rendered_frame_path = ""
+        self.final_first_path = ""
         self.tmp_output_name = ""
         self.tmp_output_name_frist = ""
           
@@ -692,13 +694,13 @@ class RenderNotifier:
                 print("First frame rendered")
                 if self.discord_preview and self.no_preview == False:
                     try:
-                        if os.path.isfile(self.first_rendered_frame_path):
-                            self.file=discord.File(self.first_rendered_frame_path,filename="first_render.png")
+                        if os.path.isfile(self.final_first_path):
+                            self.file=discord.File(self.final_first_path,filename="first_render.png")
                             attach = "attachment://first_render.png"
                             self.animation_embed.set_thumbnail(url=attach)
                             self.first_frame_embed.set_thumbnail(url=attach)
                         else:
-                            print(f"⚠️ File not found: {self.first_rendered_frame_path}")
+                            print(f"⚠️ File not found: {self.final_first_path}")
                             self.thumbfile = None
                     except Exception as e:
                         print(f"Error occurred while setting thumbnail for first frame in en_post: {e}")
@@ -728,22 +730,22 @@ class RenderNotifier:
             try:
                 if self.discord_preview and self.no_preview == False:
                     try: # try to upload the preview images
-                        if os.path.isfile(self.tmp_output_path):
+                        if os.path.isfile(self.final_path):
                             # set the image as the complete render
-                            self.file = discord.File(self.tmp_output_path, filename="complete_render.png")
+                            self.file = discord.File(self.final_path, filename="complete_render.png")
                             attach = "attachment://complete_render.png"
                             self.animation_embed.set_image(url=attach)
                         else:
-                            print(f"⚠️ File not found: {self.tmp_output_path}")
+                            print(f"⚠️ File not found: {self.final_path}")
                             self.file = None
                         
-                        if os.path.isfile(self.first_rendered_frame_path):
+                        if os.path.isfile(self.final_first_path):
                             # set the thumbnail as the first frame
-                            self.thumbfile=discord.File(self.first_rendered_frame_path,filename="first_render.png")
+                            self.thumbfile=discord.File(self.final_first_path,filename="first_render.png")
                             thumbattach = "attachment://first_render.png"
                             self.animation_embed.set_thumbnail(url=thumbattach)
                         else:
-                            print(f"⚠️ File not found: {self.first_rendered_frame_path}")
+                            print(f"⚠️ File not found: {self.final_first_path}")
                             self.thumbfile = None
                     except Exception as e:
                         print(f"An error occurred en_com when uploading images: {e}")
@@ -756,12 +758,12 @@ class RenderNotifier:
                 
                 if self.discord_preview and self.no_preview == False:
                     try:
-                        if os.path.isfile(self.tmp_output_path):
-                            self.file = discord.File(self.tmp_output_path, filename="complete_render.png")
+                        if os.path.isfile(self.final_path):
+                            self.file = discord.File(self.final_path, filename="complete_render.png")
                             attach = "attachment://complete_render.png"
                             self.animation_embed.set_image(url=attach)
                         else:
-                            print(f"⚠️ File not found: {self.tmp_output_path}")
+                            print(f"⚠️ File not found: {self.final_path}")
                             self.file = None
                     except Exception as e:
                         print(f"An error occurred en_com when uploading images: {e}")
@@ -772,12 +774,12 @@ class RenderNotifier:
             try:
                 if self.discord_preview and self.no_preview == False:
                     try: # try to upload the preview images
-                        if os.path.isfile(self.tmp_output_path):
-                            self.file=discord.File(self.tmp_output_path,filename="render.png")
+                        if os.path.isfile(self.final_path):
+                            self.file=discord.File(self.final_path,filename="render.png")
                             attach = "attachment://render.png"
                             self.still_embed.set_image(url=attach)
                         else:
-                            print(f"⚠️ File not found: {self.tmp_output_path}")
+                            print(f"⚠️ File not found: {self.final_path}")
                             self.file = None
                     except Exception as e:
                         print(f"An error occurred en_com: {e}")
@@ -797,21 +799,21 @@ class RenderNotifier:
                     if self.discord_preview and self.no_preview == False:
                         try: # try to upload the preview images
                             if self.blender_data["frames_rendered"] > 1:
-                                if os.path.isfile(self.first_rendered_frame_path):
-                                    self.thumbfile=discord.File(self.first_rendered_frame_path,filename="first_render.png")
+                                if os.path.isfile(self.final_first_path):
+                                    self.thumbfile=discord.File(self.final_first_path,filename="first_render.png")
                                     thumbattach = "attachment://first_render.png"
                                     self.animation_embed.set_thumbnail(url=thumbattach)
                                 else:
-                                    print(f"⚠️ File not found: {self.first_rendered_frame_path}")
+                                    print(f"⚠️ File not found: {self.final_first_path}")
                                     self.thumbfile = None
                             else:
-                                if os.path.isfile(self.tmp_output_path):
+                                if os.path.isfile(self.final_path):
                                     # set the image as the complete render
-                                    self.file=discord.File(self.tmp_output_path,filename="cencel_render.png")
+                                    self.file=discord.File(self.final_path,filename="cencel_render.png")
                                     attach = "attachment://cencel_render.png"
                                     self.animation_embed.set_image(url=attach)
                                 else:
-                                    print(f"⚠️ File not found: {self.tmp_output_path}")
+                                    print(f"⚠️ File not found: {self.final_path}")
                                     self.file = None
                         except Exception as e:
                             print(f"An error occurred en_com: {e}")
@@ -834,12 +836,12 @@ class RenderNotifier:
         else: # it's a still render job
             if self.discord_preview and self.no_preview == False:
                 try: # try to upload the preview images
-                    if os.path.isfile(self.tmp_output_path):
-                        self.file=discord.File(self.tmp_output_path,filename="cencel_render.png")
+                    if os.path.isfile(self.final_path):
+                        self.file=discord.File(self.final_path,filename="cencel_render.png")
                         attach = "attachment://cencel_render.png"
                         self.still_embed.set_image(url=attach)
                     else:
-                        print(f"⚠️ File not found: {self.tmp_output_path}")
+                        print(f"⚠️ File not found: {self.final_path}")
                         self.file = None
                 except Exception as e:
                     print(f"An error occurred en_com: {e}")
@@ -965,13 +967,14 @@ class RenderNotifier:
         
         # Track call type for logging or webhook purposes
         self.blender_data["call_type"] = "render_post"
-        
-        self.current_frame = bpy.context.scene.frame_current
+        self.current_frame = scene.frame_current
         first_frame = False
+        
         try:
             if self.is_animation:
                 # Check if this is the first frame of the animation
-                first_frame = self.current_frame == bpy.context.scene.frame_start
+                first_frame = self.current_frame == scene.frame_start
+                
                 if first_frame:
                     self.RENDER_FIRST_FRAME = datetime.now() - self.RENDER_START_TIME
                     
@@ -986,25 +989,31 @@ class RenderNotifier:
                     self.counter += 1
                     
                     if self.discord_preview and self.is_discord: # save first frame is discord preview is enabled
-                        try:
-                            # Save the first rendered frame as an PNG image
-                            image = bpy.data.images['Render Result']
-                            self.tmp_output_name_frist += self.file_extension
-                            self.first_rendered_frame_path += self.tmp_output_name_frist
-                            image.save_render(self.first_rendered_frame_path)
-                        except Exception as e:
-                            print(f"error while saving image: {e}")
-                            self.animation_embed.description += "\nno preview could be saved"
-                            self.no_preview = True
+                        first_filename = self.tmp_output_name_frist + self.file_extension
+                        self.final_first_path = os.path.join(self.first_rendered_frame_path, first_filename)
                     
+                        def delayed_first_frame_save():
+                            image = bpy.data.images.get('Render Result')
+                            if image and image.has_data:
+                                try:
+                                    os.makedirs(os.path.dirname(self.final_first_path), exist_ok=True)
+                                    image.save_render(self.final_first_path)
+                                    print(f"✅ First frame saved to: {self.final_first_path}")
+                                except Exception as e:
+                                    print(f"❌ Failed to save first frame: {e}")
+                                    self.animation_embed.description += "\nno preview could be saved"
+                                    self.no_preview = True
+                            else:
+                                print("⚠️ Render Result not available for first frame.")
+                            return None
+
+                        bpy.app.timers.register(delayed_first_frame_save, first_interval=0.2)
+                        
                     # Populate render info for sending to Discord or display
                     self.blender_data["RENDER_FIRST_FRAME"] = str(self.RENDER_FIRST_FRAME)[:-4]
                     self.blender_data["est_render_job"] = str(self.RENDER_FIRST_FRAME * (self.total_frames - self.counter))[:-4]
-                    self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
-                    self.blender_data["frames_rendered"] = self.counter
-                    self.blender_data["rendered_frames_percentage"] = round((self.counter / self.total_frames * 100),2)
-                    self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
-                    self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
+                    
+                    
                 else:
                     try:
                         # Time per frame and ETA calculations
@@ -1024,17 +1033,18 @@ class RenderNotifier:
                             self.blender_data["est_render_job"] = str(self.RENDER_CURRENT_FRAME * (self.total_frames - self.counter + 1))[:-4]
                             
                         # Update per-frame render data
-                        self.blender_data["frame"] = bpy.context.scene.frame_current
+                        self.blender_data["frame"] = scene.frame_current
                         self.blender_data["RENDER_CURRENT_FRAME"] = str(self.RENDER_CURRENT_FRAME)[:-4]
-                        self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
-                        self.blender_data["frames_rendered"] = self.counter
-                        self.blender_data["rendered_frames_percentage"] = round((self.counter / self.total_frames * 100),2)
-                        self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
-                        self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
 
                     except Exception as e:
                         print(f"Error in render post {e}. possibly cause render job is a still image.")
                         print("its a still render job")
+                        
+                self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
+                self.blender_data["frames_rendered"] = self.counter
+                self.blender_data["rendered_frames_percentage"] = round((self.counter / self.total_frames * 100),2)
+                self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
+                self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
                 
                 # Calculate running average frame render time
                 avg = datetime.now() - datetime.now()
@@ -1097,40 +1107,34 @@ class RenderNotifier:
         
         # Prepare image save path
         final_filename = self.tmp_output_name + self.file_extension
-        final_path = os.path.join(self.tmp_output_path, final_filename)
+        self.final_path = os.path.join(self.tmp_output_path, final_filename)
+        
+        # Schedule save if needed
+        def delayed_save():
+            image = bpy.data.images.get('Render Result')
+            if image and image.has_data:
+                try:
+                    os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
+                    image.save_render(self.final_path)
+                    print(f"✅ Saved image to: {self.final_path}")
+                except Exception as e:
+                    print(f"❌ Error saving image: {e}")
+                    if self.is_animation:
+                        self.animation_embed.description += "\nno preview could be saved"
+                    else:
+                        self.still_embed.description += "\nno preview could be saved"
+                    self.no_preview = True
+            else:
+                print("⚠️ Render Result not ready. (complete)")
+            return None
+        
+        if self.discord_preview and self.is_discord:
+            bpy.app.timers.register(delayed_save, first_interval=0.2)
             
         if self.is_animation:
-            # Save last frame of the animation
-            if self.discord_preview and self.is_discord:
-                try:
-                    image = bpy.data.images['Render Result']
-                    self.tmp_output_name += self.file_extension
-                    self.tmp_output_path = os.path.join(self.tmp_output_path, self.tmp_output_name)
-                    image.save_render(self.tmp_output_path)
-                except Exception as e:
-                    print(f"error while saving image: {e}")
-                    self.animation_embed.description += "\nno preview could be saved"
-                    self.no_preview = True
-            
             # Update metadata
             self.blender_data["average_time"] = str(self.average_time)[:-4]
             self.blender_data["total_Est_time"] = str(self.RENDER_FIRST_FRAME * self.total_frames)[:-4]
-        else:
-            if self.discord_preview and self.is_discord:
-                # Save still image
-                print("Still image render job")
-                try:
-                    image = bpy.data.images['Render Result']
-                    self.tmp_output_name += self.file_extension
-                    self.tmp_output_path += self.tmp_output_name
-                    print(f"Saving still image to: {self.tmp_output_path}")
-                    image.save_render(self.tmp_output_path)
-                except Exception as e:
-                    print(f"error while saving image: {e}")
-                    self.animation_embed.description += "\nno preview could be saved"
-                    self.no_preview = True
-            
-            
         
         if self.is_discord:
             self.send_webhook_non_blocking(finished=True)
@@ -1167,9 +1171,7 @@ class RenderNotifier:
         # Capture the current frame at cancellation
         cancel_frame = self.current_frame
         self.blender_data["call_type"] = "cancel"
-        
-        #scene = bpy.context.scene
-        render = scene.render
+        self.blender_data["RENDER_CANCELLED_TIME"] = str(self.RENDER_CANCELLED_TIME)[:-4]
         
         # Detect if the render was a still frame (only one frame rendered)
         if self.current_frame == bpy.context.scene.frame_start:
@@ -1179,46 +1181,39 @@ class RenderNotifier:
             
         print(f"discord_preview: {self.discord_preview}")
         
+        # Prepare image save path
+        final_filename = self.tmp_output_name + self.file_extension
+        self.final_path = os.path.join(self.tmp_output_path, final_filename)
+        
+        # Schedule image saving if preview is requested
+        def delayed_save():
+            image = bpy.data.images.get('Render Result')
+            if image and image.has_data:
+                try:
+                    os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
+                    image.save_render(self.final_path)
+                    print(f"✅ Saved image to: {self.final_path}")
+                except Exception as e:
+                    print(f"❌ Error saving image: {e}")
+                    if self.is_animation:
+                        self.animation_embed.description += "\nno preview could be saved"
+                    else:
+                        self.still_embed.description += "\nno preview could be saved"
+                    self.no_preview = True
+            else:
+                print("⚠️ Render Result not ready or missing.")
+            return None
+
+        if self.discord_preview and self.is_discord:
+            bpy.app.timers.register(delayed_save, first_interval=0.2)
+        
         if self.is_animation:
             # Handle animation render cancellation
-            #render_path = render.filepath
-            if self.discord_preview and self.is_discord:
-            
-                image = bpy.data.images['Render Result']
-                
-                try:
-                    # Attempt to save the last rendered frame
-                    self.tmp_output_name += self.file_extension
-                    self.tmp_output_path += self.tmp_output_name
-                    image.save_render(self.tmp_output_path)
-                except Exception as e:
-                    print(f"error while saving image: {e}")
-                    self.animation_embed.description += "\nno preview could be saved"
-                    self.no_preview = True
-            
             self.blender_data["current_frame"] = cancel_frame
             self.blender_data["total_frames_rendered"] = bpy.context.scene.frame_end - cancel_frame
             self.blender_data["frames_still_to_render_range"] = f"{cancel_frame} - {bpy.context.scene.frame_end}"
             self.blender_data["frames_still_to_render"] = f"{bpy.context.scene.frame_end - self.current_frame}"
-            self.blender_data["RENDER_CANCELLED_TIME"] = str(self.RENDER_CANCELLED_TIME)[:-4]
             
-        else:
-            if self.discord_preview and self.is_discord:
-                # Handle still image cancellation
-                print("Still image render job")
-                try:
-                    image = bpy.data.images['Render Result']
-                    
-                    self.tmp_output_name += self.file_extension
-                    self.tmp_output_path += self.tmp_output_name
-                    image.save_render(self.tmp_output_path)
-                except Exception as e:
-                    print(f"error while saving image: {e}")
-                    self.animation_embed.description += "\nno preview could be saved"
-                    self.no_preview = True
-            
-            self.blender_data["RENDER_CANCELLED_TIME"] = str(self.RENDER_CANCELLED_TIME)[:-4]
-        
         if self.is_discord:
             self.send_webhook_non_blocking(canceled=True)
         
