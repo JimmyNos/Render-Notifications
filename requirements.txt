@@ -1,0 +1,3 @@
+notifypy
+discord.py
+aiohttp
