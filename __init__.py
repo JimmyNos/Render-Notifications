@@ -1286,7 +1286,8 @@ class RenderNotifier:
 # register
 ##################################
 
-#RenderNotifier = None  # placeholder for later
+#RenderNotifier = RenderNotifier  # placeholder for later
+notifier_instance = None  # placeholder for later
 
 
 
@@ -1300,7 +1301,7 @@ classes = [
 # Register all components and event handlers
 def register():
     global Notify, discord, aiohttp, DiscordWebhook, DiscordEmbed
-    
+    global notifier_instance # Declare this so we can set it
 
 
     # Try to import optional dependencies
@@ -1313,7 +1314,7 @@ def register():
         Notify = NotifyClass
         DiscordWebhook = DiscordWebhookClass
         DiscordEmbed = DiscordEmbedClass
-
+        #import lib
     except ImportError:
         Notify = None
         discord = None
@@ -1328,17 +1329,17 @@ def register():
 
     bpy.types.Scene.render_panel_props = bpy.props.PointerProperty(type=RenderNotificationsProperties)
 
-    global RenderNotifier
-    RenderNotifier = RenderNotifier()  # Only create it after all deps are loaded
+    
     # Only register handlers if dependencies are available
     if None not in (Notify, DiscordWebhook, aiohttp):
+        notifier_instance = RenderNotifier()
         
-        bpy.app.handlers.render_init.append(RenderNotifier.render_init)         # Called when render starts
-        bpy.app.handlers.render_post.append(RenderNotifier.render_post)         # Called after each frame is rendered
-        bpy.app.handlers.render_pre.append(RenderNotifier.render_pre)           # Called just before rendering starts
-        bpy.app.handlers.render_complete.append(RenderNotifier.complete)        # Called when render finishes   
-        bpy.app.handlers.render_cancel.append(RenderNotifier.cancel)            # Called if render is cancelled
-        bpy.app.handlers.render_write.append(RenderNotifier.on_frame_render)    # Called when a frame is written to disk
+        bpy.app.handlers.render_init.append(notifier_instance.render_init)         # Called when render starts
+        bpy.app.handlers.render_post.append(notifier_instance.render_post)         # Called after each frame is rendered
+        bpy.app.handlers.render_pre.append(notifier_instance.render_pre)           # Called just before rendering starts
+        bpy.app.handlers.render_complete.append(notifier_instance.complete)        # Called when render finishes   
+        bpy.app.handlers.render_cancel.append(notifier_instance.cancel)            # Called if render is cancelled
+        bpy.app.handlers.render_write.append(notifier_instance.on_frame_render)    # Called when a frame is written to disk
     else:
         print("⚠️ Skipping handler registration due to missing libraries.")
         
@@ -1353,12 +1354,12 @@ def unregister():
 
     # Safely remove handlers
     for handler_list, func in [
-        (bpy.app.handlers.render_init, RenderNotifier.render_init),
-        (bpy.app.handlers.render_post, RenderNotifier.render_post),
-        (bpy.app.handlers.render_pre, RenderNotifier.render_pre),
-        (bpy.app.handlers.render_complete, RenderNotifier.complete),
-        (bpy.app.handlers.render_cancel, RenderNotifier.cancel),
-        (bpy.app.handlers.render_write, RenderNotifier.on_frame_render),
+        (bpy.app.handlers.render_init, notifier_instance.render_init),
+        (bpy.app.handlers.render_post, notifier_instance.render_post),
+        (bpy.app.handlers.render_pre, notifier_instance.render_pre),
+        (bpy.app.handlers.render_complete, notifier_instance.complete),
+        (bpy.app.handlers.render_cancel, notifier_instance.cancel),
+        (bpy.app.handlers.render_write, notifier_instance.on_frame_render),
     ]:
         try:
             handler_list.remove(func)
