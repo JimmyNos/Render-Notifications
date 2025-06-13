@@ -366,11 +366,18 @@ class RenderNotifier:
         self.precountdown = 0.0
         self.message_id = None
         
+        
+
+        
         self.file = None
         self.no_preview = False
         self.rendered_frame_path = ""
         self.file_extension = ".png"
         
+        self.discord_preview = False
+        self.desktop_cancel = False
+        self.webhook_cancel = False
+        self.webhook_every_frame = False
         self.is_discord = False
         self.is_webhook = False
         self.is_desktop = False
@@ -855,7 +862,7 @@ class RenderNotifier:
     @persistent
     def render_init(self,scene,*args):
         self.clean_var() # clears the variables for a new render job
-        addon_name = "Render-Notifications"
+        addon_name = __package__
         
         #get blend file name
         self.blend_filepath = bpy.data.filepath
@@ -1097,7 +1104,7 @@ class RenderNotifier:
         self.blender_data["call_type"] = "complete"
         self.blender_data["total_time_elapsed"] = str(self.RENDER_TOTAL_TIME)[:-4]
         
-        print(f"discord_preview: {self.discord_preview}")
+        #print(f"discord_preview: {self.discord_preview}")
         
         # Detect if the render was a still frame (only one frame rendered)
         if self.current_frame == scene.frame_start:
