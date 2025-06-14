@@ -32,13 +32,46 @@ from bpy.types import Operator, AddonPreferences,PropertyGroup,Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
 from bpy.app.handlers import persistent
 
-import sys, subprocess, os, site
+import sys, subprocess, os, site, platform
 import json
 import requests, socket
 import asyncio
 
 from datetime import datetime
 import threading
+
+# This class is used to get the python executable path based on the OS
+class Get_sys_path():
+    @staticmethod
+    def isWindows():
+        return os.name == 'nt'
+
+    @staticmethod
+    def isMacOS():
+        return os.name == 'posix' and platform.system() == "Darwin"
+
+    @staticmethod
+    def isLinux():
+        return os.name == 'posix' and platform.system() == "Linux"
+
+    @staticmethod
+    def python_exec():
+        
+        if Get_sys_path.isWindows():
+            return os.path.join(sys.prefix, 'bin', 'python.exe')
+        elif Get_sys_path.isMacOS():
+            try:
+                # 2.92 and older
+                path = bpy.app.binary_path_python
+            except AttributeError:
+                # 2.93 and later
+                path = sys.executable
+            return os.path.abspath(path)
+        elif Get_sys_path.isLinux():
+            return os.path.join(sys.prefix, 'bin', 'python3.11')
+        else:
+            print("sorry, still not implemented for ", os.name, " - ", platform.system())
+            return sys.executable  # Safe fallback
 
 def install_package(pkg_name):
     user_site = site.getusersitepackages()
@@ -50,14 +83,14 @@ def install_package(pkg_name):
     else:
         print(f"✅ Already in user site-packages path: {user_site}")
         
+    get_sys_path = Get_sys_path()
+    python_exe = get_sys_path.python_exec()
+    
     try:
-        python_exe = sys.executable
-        target = os.path.join(sys.prefix, 'lib', 'site-packages')
-        
         subprocess.call([python_exe, '-m', 'ensurepip'])
         subprocess.call([python_exe, '-m', 'pip', 'install', '--upgrade', 'pip'])
         
-        subprocess.call([python_exe, "-m", "pip", "install", "--user", pkg_name])
+        subprocess.call([python_exe, "-m", "pip", "install", pkg_name])
         return True
     except Exception as e:
         print(f"Install failed: {e}")
