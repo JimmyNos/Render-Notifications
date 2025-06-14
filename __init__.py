@@ -87,10 +87,11 @@ def install_package(pkg_name):
     python_exe = get_sys_path.python_exec()
     
     try:
-        subprocess.call([python_exe, '-m', 'ensurepip'])
-        subprocess.call([python_exe, '-m', 'pip', 'install', '--upgrade', 'pip'])
+        print("installing missing libaries")
+        subprocess.run([python_exe, '-m', 'ensurepip'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
+        subprocess.run([python_exe, '-m', 'pip', 'install', '--upgrade', 'pip'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
         
-        subprocess.call([python_exe, "-m", "pip", "install", pkg_name])
+        subprocess.run([python_exe, "-m", "pip", "install", pkg_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
         return True
     except Exception as e:
         print(f"Install failed: {e}")
@@ -108,9 +109,9 @@ class RenderNotifications_OT_InstallDeps(bpy.types.Operator):
         success_aiohttp = install_package("aiohttp")
 
         if success_discord and success_aiohttp and success_notify:
-            self.report({'INFO'}, "Dependencies installed successfully.")
+            #self.report({'INFO'}, "Dependencies installed successfully.")
             bpy.context.preferences.addons[__name__].preferences.is_installed = True
-            bpy.context.preferences.addons[__name__].preferences.installed_msg = "Libraries are now installed (please reload the addon)"
+            bpy.context.preferences.addons[__name__].preferences.installed_msg = "Libraries are now installed. Warning: please reload the addon!"
             self.report({'INFO'}, "Dependencies installed. Please disable and re-enable the addon.")
 
         else:
@@ -535,13 +536,13 @@ class RenderNotifier:
                                     
                                     await self.send_on_cancel(full_hook, webhook)
                                 elif self.blender_data["frames_rendered"] == 1:
-                                    await webhook.edit_message(self.message_id, embed=self.animation_embed,attachments=[self.file])
+                                    await webhook.edit_message(self.message_id, embed=self.animation_embed,attachments=[self.thumbfile])
                                 else:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
                             except Exception as e:
                                 # If the embed is too large or an error is cought, try to send it without the image
-                                print(f"Error occurred while embedding image in Discord webhook: {e}. This might be due to file size limitations or an invalid file path.")
-                                self.animation_embed.description+= "\n render too large for preview or failed to save."
+                                print(f"Error occurred while embedding image in Discord webhook: {e}. This might be due to file size limitations or an invalid file path. (possiable fix: try reloading blender)")
+                                self.animation_embed.description+= "\n Render too large for preview or failed to save."
                                 if finished:
                                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
                                     
@@ -583,8 +584,8 @@ class RenderNotifier:
                                     await webhook.edit_message(self.message_id, embed=self.still_embed)
                             except Exception as e:
                                 # If the embed is too large or an error is cought, try to send it without the image
-                                print(f"Error occurred while embedding image in Discord webhook: {e}. This might be due to file size limitations or an invalid file path.")
-                                self.still_embed.description+= "\n render too large for preview or failed to save."
+                                print(f"Error occurred while embedding image in Discord webhook: {e}. This might be due to file size limitations or an invalid file path.  (possiable fix: try reloading blender)")
+                                self.still_embed.description+= "\n Render too large for preview or failed to save."
                                 if finished:
                                     await webhook.edit_message(self.message_id, embed=self.still_embed)
                                     
@@ -663,7 +664,7 @@ class RenderNotifier:
             future.result()  # Ensure the coroutine executes correctly
             #future.add_done_callback(lambda f: print(f"Coroutine completed with result: {f.result()}"))
         except Exception as e:
-            print(f"⚠️ Error occurred while running coroutine thread-safe: {e}")
+            print(f"⚠️ Error occurred while running coroutine thread-safe: {e} {self.blender_data['frames_rendered']}")
 
     # Load data into embeds
     def em_init(self,isAnimation):
@@ -739,11 +740,13 @@ class RenderNotifier:
                 print("First frame rendered")
                 if self.discord_preview and self.no_preview == False:
                     try:
+                        print(f"self.final_first_path: {self.final_first_path}")
                         if os.path.isfile(self.final_first_path):
-                            self.file=discord.File(self.final_first_path,filename="first_render.png")
-                            attach = "attachment://first_render.png"
-                            self.animation_embed.set_thumbnail(url=attach)
-                            self.first_frame_embed.set_thumbnail(url=attach)
+                            print("valid file path")
+                            self.thumbfile=discord.File(self.final_first_path,filename="first_render.png")
+                            thumbattach = "attachment://first_render.png"
+                            self.animation_embed.set_thumbnail(url=thumbattach)
+                            self.first_frame_embed.set_thumbnail(url=thumbattach)
                         else:
                             print(f"⚠️ File not found: {self.final_first_path}")
                             self.thumbfile = None
@@ -820,8 +823,8 @@ class RenderNotifier:
                 if self.discord_preview and self.no_preview == False:
                     try: # try to upload the preview images
                         if os.path.isfile(self.final_path):
-                            self.file=discord.File(self.final_path,filename="render.png")
-                            attach = "attachment://render.png"
+                            self.file = discord.File(self.final_path,filename="complete_render.png")
+                            attach = "attachment://complete_render.png"
                             self.still_embed.set_image(url=attach)
                         else:
                             print(f"⚠️ File not found: {self.final_path}")
@@ -1036,10 +1039,20 @@ class RenderNotifier:
                     self.RENDER_PRE_TIME = datetime.now()
                     self.counter += 1
                     
+                    # Populate render info for sending to Discord or display
+                    self.blender_data["RENDER_FIRST_FRAME"] = str(self.RENDER_FIRST_FRAME)[:-4]
+                    self.blender_data["est_render_job"] = str(self.RENDER_FIRST_FRAME * (self.total_frames - self.counter))[:-4]
+                    self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
+                    self.blender_data["frames_rendered"] = self.counter
+                    self.blender_data["rendered_frames_percentage"] = round((self.counter / self.total_frames * 100),2)
+                    self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
+                    self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
+                    
                     if self.discord_preview and self.is_discord: # save first frame is discord preview is enabled
                         first_filename = self.tmp_output_name_frist + self.file_extension
                         self.final_first_path = os.path.join(self.first_rendered_frame_path, first_filename)
                     
+                        
                         def delayed_first_frame_save():
                             image = bpy.data.images.get('Render Result')
                             if image and image.has_data:
@@ -1047,21 +1060,22 @@ class RenderNotifier:
                                     os.makedirs(os.path.dirname(self.final_first_path), exist_ok=True)
                                     image.save_render(self.final_first_path)
                                     print(f"✅ First frame saved to: {self.final_first_path}")
+                                    self.send_webhook_non_blocking(frame=True)
                                 except Exception as e:
-                                    print(f"❌ Failed to save first frame: {e}")
+                                    print(f"❌ Failed to save first frame (render_post): {e}")
                                     self.animation_embed.description += "\nno preview could be saved"
                                     self.no_preview = True
                             else:
-                                print("⚠️ Render Result not available for first frame.")
+                                print("⚠️ Render Result not available for first frame. (render_post)")
                             return None
 
                         bpy.app.timers.register(delayed_first_frame_save, first_interval=0.2)
                         
-                    # Populate render info for sending to Discord or display
-                    self.blender_data["RENDER_FIRST_FRAME"] = str(self.RENDER_FIRST_FRAME)[:-4]
-                    self.blender_data["est_render_job"] = str(self.RENDER_FIRST_FRAME * (self.total_frames - self.counter))[:-4]
-                    
-                    
+                    elif self.is_discord:
+                        try:
+                            self.send_webhook_non_blocking(frame=True)
+                        except Exception as e:
+                            print(f"error in re_post when sending first frame discord: {e}")
                 else:
                     try:
                         # Time per frame and ETA calculations
@@ -1083,16 +1097,23 @@ class RenderNotifier:
                         # Update per-frame render data
                         self.blender_data["frame"] = scene.frame_current
                         self.blender_data["RENDER_CURRENT_FRAME"] = str(self.RENDER_CURRENT_FRAME)[:-4]
+                        self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
+                        self.blender_data["frames_rendered"] = self.counter
+                        self.blender_data["rendered_frames_percentage"] = round((self.counter / self.total_frames * 100),2)
+                        self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
+                        self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
+                        
+                        if self.is_discord:
+                            try:
+                                self.send_webhook_non_blocking(frame=True)
+                            except Exception as e:
+                                print(f"error in re_post when sending discord: {e}")
 
                     except Exception as e:
-                        print(f"Error in render post {e}. possibly cause render job is a still image.")
+                        print(f"Error in render post (render_post) {e}. possibly cause render job is a still image.")
                         print("its a still render job")
                         
-                self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
-                self.blender_data["frames_rendered"] = self.counter
-                self.blender_data["rendered_frames_percentage"] = round((self.counter / self.total_frames * 100),2)
-                self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
-                self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
+                
                 
                 # Calculate running average frame render time
                 avg = datetime.now() - datetime.now()
@@ -1103,9 +1124,6 @@ class RenderNotifier:
                 
                 self.average_time = avg
                 self.blender_data["average_time"] = str(self.average_time)[:-4]
-                #send_message_to_bot(blender_data)
-                if self.is_discord:
-                    self.send_webhook_non_blocking(frame=True)
                 
                 if self.is_webhook and first_frame and self.webhook_first:
                     self.send_webhook()
@@ -1119,6 +1137,7 @@ class RenderNotifier:
                         )
         except Exception as e:
             print(f"Error in render post logic: {e}")
+            print(self.counter)
         print("Render Post Logic Completed")
         
     # check if rendering frame is the first frame in the timeline
@@ -1165,8 +1184,10 @@ class RenderNotifier:
                     os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
                     image.save_render(self.final_path)
                     print(f"✅ Saved image to: {self.final_path}")
+                    if self.is_discord:
+                        self.send_webhook_non_blocking(finished=True)
                 except Exception as e:
-                    print(f"❌ Error saving image: {e}")
+                    print(f"❌ Error saving image (complete): {e}")
                     if self.is_animation:
                         self.animation_embed.description += "\nno preview could be saved"
                     else:
@@ -1178,14 +1199,14 @@ class RenderNotifier:
         
         if self.discord_preview and self.is_discord:
             bpy.app.timers.register(delayed_save, first_interval=0.2)
+        else:
+            if self.is_discord:
+                self.send_webhook_non_blocking(finished=True)
             
         if self.is_animation:
             # Update metadata
             self.blender_data["average_time"] = str(self.average_time)[:-4]
             self.blender_data["total_Est_time"] = str(self.RENDER_FIRST_FRAME * self.total_frames)[:-4]
-        
-        if self.is_discord:
-            self.send_webhook_non_blocking(finished=True)
         
         if self.is_webhook and self.webhook_completion:
             self.send_webhook()
@@ -1241,19 +1262,25 @@ class RenderNotifier:
                     os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
                     image.save_render(self.final_path)
                     print(f"✅ Saved image to: {self.final_path}")
+                    
+                    if self.is_discord:
+                        self.send_webhook_non_blocking(finished=True)
                 except Exception as e:
-                    print(f"❌ Error saving image: {e}")
+                    print(f"❌ Error saving image (cancel): {e}")
                     if self.is_animation:
                         self.animation_embed.description += "\nno preview could be saved"
                     else:
                         self.still_embed.description += "\nno preview could be saved"
                     self.no_preview = True
             else:
-                print("⚠️ Render Result not ready or missing.")
+                print("⚠️ Render Result not ready or missing (cancel).")
             return None
 
         if self.discord_preview and self.is_discord:
             bpy.app.timers.register(delayed_save, first_interval=0.2)
+        else:
+            if self.is_discord:
+                self.send_webhook_non_blocking(canceled=True)
         
         if self.is_animation:
             # Handle animation render cancellation
@@ -1262,9 +1289,6 @@ class RenderNotifier:
             self.blender_data["frames_still_to_render_range"] = f"{cancel_frame} - {bpy.context.scene.frame_end}"
             self.blender_data["frames_still_to_render"] = f"{bpy.context.scene.frame_end - self.current_frame}"
             
-        if self.is_discord:
-            self.send_webhook_non_blocking(canceled=True)
-        
         if self.is_webhook and self.webhook_cancel:
             self.send_webhook()
             
