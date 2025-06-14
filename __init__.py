@@ -32,7 +32,7 @@ from bpy.types import Operator, AddonPreferences,PropertyGroup,Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
 from bpy.app.handlers import persistent
 
-import sys, subprocess, os
+import sys, subprocess, os, site
 import json
 import requests, socket
 import asyncio
@@ -41,8 +41,23 @@ from datetime import datetime
 import threading
 
 def install_package(pkg_name):
+    user_site = site.getusersitepackages()
+    
+    # Check if user site-packages path is in sys.path
+    if user_site not in sys.path:
+        sys.path.append(user_site)
+        print(f"✅ Added user site-packages path: {user_site}")
+    else:
+        print(f"✅ Already in user site-packages path: {user_site}")
+        
     try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", pkg_name])
+        python_exe = sys.executable
+        target = os.path.join(sys.prefix, 'lib', 'site-packages')
+        
+        subprocess.call([python_exe, '-m', 'ensurepip'])
+        subprocess.call([python_exe, '-m', 'pip', 'install', '--upgrade', 'pip'])
+        
+        subprocess.call([python_exe, "-m", "pip", "install", "--user", pkg_name])
         return True
     except Exception as e:
         print(f"Install failed: {e}")
@@ -1314,7 +1329,7 @@ def register():
         Notify = NotifyClass
         DiscordWebhook = DiscordWebhookClass
         DiscordEmbed = DiscordEmbedClass
-        #import lib
+        #import libion
     except ImportError:
         Notify = None
         discord = None
@@ -1352,19 +1367,20 @@ def unregister():
     if hasattr(bpy.types.Scene, "render_panel_props"):
         del bpy.types.Scene.render_panel_props
 
-    # Safely remove handlers
-    for handler_list, func in [
-        (bpy.app.handlers.render_init, notifier_instance.render_init),
-        (bpy.app.handlers.render_post, notifier_instance.render_post),
-        (bpy.app.handlers.render_pre, notifier_instance.render_pre),
-        (bpy.app.handlers.render_complete, notifier_instance.complete),
-        (bpy.app.handlers.render_cancel, notifier_instance.cancel),
-        (bpy.app.handlers.render_write, notifier_instance.on_frame_render),
-    ]:
-        try:
-            handler_list.remove(func)
-        except ValueError:
-            pass  # Already removed or never registered
+    if notifier_instance:
+        # Safely remove handlers
+        for handler_list, func in [
+            (bpy.app.handlers.render_init, notifier_instance.render_init),
+            (bpy.app.handlers.render_post, notifier_instance.render_post),
+            (bpy.app.handlers.render_pre, notifier_instance.render_pre),
+            (bpy.app.handlers.render_complete, notifier_instance.complete),
+            (bpy.app.handlers.render_cancel, notifier_instance.cancel),
+            (bpy.app.handlers.render_write, notifier_instance.on_frame_render),
+        ]:
+            try:
+                handler_list.remove(func)
+            except ValueError:
+                pass  # Already removed or never registered
 
 # Blender add-ons are registered and unregistered using Blender's add-on system.
 # Run registration when script is executed directly
