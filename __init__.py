@@ -178,16 +178,19 @@ class RenderNotificationsPreferences(AddonPreferences):
         
         install_box = layout.box()
         row = install_box.row(align=False,heading="test")
-        if None in (Notify, discord, aiohttp):
+        if None in (Notify, discord, aiohttp): # If libraries are missing, then extra labels and a button to intall then will appear 
             install_col = install_box.column()
             install_col.label(text="Missing libraries: notifypy, discord.py, aiohttp")
             install_col.label(text="Please install them to use the plugin!")
-            install_col.operator("rendernotify.install_deps", text="Install missing libraries")
+            install_col.operator("rendernotify.install_deps", text="Install missing libraries",icon="CANCEL")
             if self.is_installed:
-                install_col.label(text=self.installed_msg)
+                row = install_box.row()
+                row.label(text=self.installed_msg)
+                row.label(icon="CHECKMARK")
         else:
             #print(f"is_installed: {self.is_installed}")      
             row.label(text="All libraries are installed.")
+            row.label(icon="CHECKMARK")
             self.is_installed = True
         
         if self.is_installed:
