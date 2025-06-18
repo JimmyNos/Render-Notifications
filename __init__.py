@@ -176,46 +176,51 @@ class RenderNotificationsPreferences(AddonPreferences):
         layout = self.layout
         layout.label(text="Setup notifications")
         
+        install_box = layout.box()
+        row = install_box.row(align=False,heading="test")
         if None in (Notify, discord, aiohttp):
-            layout.label(text="Missing libraries: notifypy, discord.py, aiohttp")
-            layout.label(text="Please install them to use the plugin.")
-            layout.operator("rendernotify.install_deps", text="Install missing libraries")
+            install_col = install_box.column()
+            install_col.label(text="Missing libraries: notifypy, discord.py, aiohttp")
+            install_col.label(text="Please install them to use the plugin!")
+            install_col.operator("rendernotify.install_deps", text="Install missing libraries")
             if self.is_installed:
-                layout.label(text=self.installed_msg)
+                install_col.label(text=self.installed_msg)
         else:
             #print(f"is_installed: {self.is_installed}")      
-            layout.label(text="All libraries are installed.")
-            self.is_installed = True  
-        
+            row.label(text="All libraries are installed.")
+            self.is_installed = True
         
         if self.is_installed:
             ## Desktop ##
-            layout.label(text="")
-            layout.label(text="Desktop notifications")
-            row = layout.row()
+            desktop_box = layout.box()
+            row = desktop_box.row()
+            desktop_box.label(text="Desktop notifications")
+            row = desktop_box.row()
             row.label(text="Custom Sound:")
             row.prop(self, "custom_sound", text="",placeholder="cutom_sound.wav")
-            row = layout.row()
+            row = desktop_box.row()
             row.label(text="Sound path:")
             row.prop(self, "desktop_sound_path", text="")
             
             ## Discord ##
-            layout.label(text="")
-            layout.label(text="Discord notifications")
-            row = layout.row()
+            discord_box = layout.box()
+            row = discord_box.row()
+            discord_box.label(text="Discord notifications")
+            row = discord_box.row()
             row.label(text="Discord channel webhook name:")
             row.prop(self, "discord_webhook_name", text="")
-            row = layout.row()
+            row = discord_box.row()
             row.label(text="Discord channel webhook url:")
             row.prop(self, "discord_webhook_url", text="")
-            row = layout.row()
+            row = discord_box.row()
             row.label(text="Default temporary save location:")
             row.prop(self, "tmp_output_path", text="")
             
             ## Webhook ##
-            layout.label(text="")
-            layout.label(text="Webhook notifications")
-            row = layout.row()
+            webhook_box = layout.box()
+            row = webhook_box.row()
+            webhook_box.label(text="Webhook notifications")
+            row = webhook_box.row()
             row.label(text="Webhook url:")
             row.prop(self, "webhook_url", text="")
 
