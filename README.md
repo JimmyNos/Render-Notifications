@@ -82,6 +82,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 # Examples
 
 ### JSON payload examples
+1.  Still Render
 ```
 {
   "call_type": "complete",
@@ -92,7 +93,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
   "total_time_elapsed": "0:00:00.69"
 }
 ```
-
+2.  Initial Render Start
 ```
 {
   "call_type": "render_init",
@@ -104,7 +105,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
   "Total_frames_to_render": 6
 }
 ```
-
+3. After Each Frame Renders
 ```
 {
   "call_type": "render_post",
@@ -125,7 +126,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
   "RENDER_CURRENT_FRAME": "0:00:00.75"
 }
 ```
-
+4. On Completion
 ```
 {
   "call_type": "complete",
