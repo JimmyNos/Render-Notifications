@@ -619,21 +619,21 @@ class RenderNotifier:
     
     # Send a discord message when the render job is complete         
     async def send_on_complete(self, full_hook=None, webhook=None):
-        print(f"full_hook.guild_id: {full_hook.guild_id}, full_hook.channel_id: {full_hook.channel_id}, self.message_id: {self.message_id}")
+        #print(f"full_hook.guild_id: {full_hook.guild_id}, full_hook.channel_id: {full_hook.channel_id}, self.message_id: {self.message_id}")
         message_link = f"https://discord.com/channels/{full_hook.guild_id}/{full_hook.channel_id}/{self.message_id}"
         reply_content = f"{message_link}" # link to main message
         self.complete_embed.description += f"\n## {reply_content}"
         await webhook.send(username=self.discord_webhook_name, embed=self.complete_embed)
-        print("reply sent")
+        #print("reply sent")
     
     # Send a discord message when the render job is canceled
     async def send_on_cancel(self, full_hook=None, webhook=None):
-        print(f"full_hook.guild_id: {full_hook.guild_id}, full_hook.channel_id: {full_hook.channel_id}, self.message_id: {self.message_id}")
+        #print(f"full_hook.guild_id: {full_hook.guild_id}, full_hook.channel_id: {full_hook.channel_id}, self.message_id: {self.message_id}")
         message_link = f"https://discord.com/channels/{full_hook.guild_id}/{full_hook.channel_id}/{self.message_id}"
         reply_content = f"{message_link}" # link to main message
         self.cancel_embed.description += f"\n## {reply_content}"
         await webhook.send(username=self.discord_webhook_name, embed=self.cancel_embed)
-        print("reply sent")
+        #print("reply sent")
     
     # handle discord webhook using a separate thread-safe event loop
     def send_webhook_non_blocking(self, init=False, frame=False, finished=False, canceled=False):
@@ -712,20 +712,18 @@ class RenderNotifier:
     
     # Load new data into embeds every time a frame is rendered
     def em_post(self,isAnimation):
-        print(f"Updating embed with new data {isAnimation}, Frames rendered: {self.blender_data['frames_rendered']}")
+        #print(f"Updating embed with new data {isAnimation}, Frames rendered: {self.blender_data['frames_rendered']}")
         if isAnimation: 
             
             self.frames_rendered_feild = "("+str(self.blender_data['frames_rendered'])+"/"+str(self.blender_data['total_frames'])+") "+str(self.blender_data['rendered_frames_percentage'])+"%"
             
             #check if it's the first frame
-            print(f"Frames rendered: {self.blender_data['frames_rendered']}")
             if self.blender_data["frames_rendered"] == 1:
-                print("First frame rendered")
+                #print("First frame rendered")
                 if self.discord_preview and self.no_preview == False:
                     try:
-                        print(f"self.final_first_path: {self.final_first_path}")
                         if os.path.isfile(self.final_first_path):
-                            print("valid file path")
+                            #print("valid file path")
                             self.thumbfile=discord.File(self.final_first_path,filename="first_render.png")
                             thumbattach = "attachment://first_render.png"
                             self.animation_embed.set_thumbnail(url=thumbattach)
@@ -943,17 +941,13 @@ class RenderNotifier:
         self.webhook_completion = bpy.context.scene.render_panel_props.webhook_completion
         self.webhook_cancel = bpy.context.scene.render_panel_props.webhook_cancel
         
-        print(bpy.context.scene.render_panel_props.is_discord)
-        print(bpy.context.preferences.addons[addon_name].preferences.custom_sound)
-        
     # Handle render pre logic
     @persistent
     def render_pre(self,scene,*args):
-        print("\nPre Render\n")
+        #print("\nPre Render\n")
         self.current_frame = bpy.context.scene.frame_current
         self.blender_data["frame"] = bpy.context.scene.frame_current
         self.isfirst_frame = self.current_frame == bpy.context.scene.frame_start
-        print(f"Current frame: {self.current_frame}, First frame: {self.isfirst_frame}")
         # check if the render job is an animation or a still image 
         if self.current_frame == bpy.context.scene.frame_start:
             self.is_animation = True
@@ -992,12 +986,12 @@ class RenderNotifier:
                     title="Render started", 
                     message="Render job started for: " + self.blender_data["project_name"]
                     )
-        print(f"Render job type: {self.job_type}")
+        #print(f"Render job type: {self.job_type}")
         
     # Handle render post logic
     @persistent   
     def render_post(self,scene,*args):
-        print("\nPost Render\n")
+        #print("\nPost Render\n")
         
         # Track call type for logging or webhook purposes
         self.blender_data["call_type"] = "render_post"
@@ -1042,7 +1036,7 @@ class RenderNotifier:
                                 try:
                                     os.makedirs(os.path.dirname(self.final_first_path), exist_ok=True)
                                     image.save_render(self.final_first_path)
-                                    print(f"✅ First frame saved to: {self.final_first_path}")
+                                    #print(f"✅ First frame saved to: {self.final_first_path}")
                                     self.send_webhook_non_blocking(frame=True)
                                 except Exception as e:
                                     print(f"❌ Failed to save first frame (render_post): {e}")
@@ -1121,7 +1115,7 @@ class RenderNotifier:
         except Exception as e:
             print(f"Error in render post logic: {e}")
             print(self.counter)
-        print("Render Post Logic Completed")
+        #print("Render Post Logic Completed")
         
     # check if rendering frame is the first frame in the timeline
     @persistent
@@ -1166,7 +1160,7 @@ class RenderNotifier:
                 try:
                     os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
                     image.save_render(self.final_path)
-                    print(f"✅ Saved image to: {self.final_path}")
+                    #print(f"✅ Saved image to: {self.final_path}")
                     if self.is_discord:
                         self.send_webhook_non_blocking(finished=True)
                 except Exception as e:
@@ -1204,16 +1198,16 @@ class RenderNotifier:
         # Reset flags
         self.is_animation = False
         
-        print(f"""
-        ===== Render Completed =====
-        Blend File Name: {self.blend_filename}
-        Total Render Time: {self.RENDER_TOTAL_TIME}
-        Total Frames: {self.total_frames}
-        First Frame: {scene.frame_start}
-        Average Render Time per Frame: {self.average_time}
-        First Frame Render Time: {self.RENDER_FIRST_FRAME}
-        ==========================
-        """)
+        #print(f"""
+        #===== Render Completed =====
+        #Blend File Name: {self.blend_filename}
+        #Total Render Time: {self.RENDER_TOTAL_TIME}
+        #Total Frames: {self.total_frames}
+        #First Frame: {scene.frame_start}
+        #Average Render Time per Frame: {self.average_time}
+        #First Frame Render Time: {self.RENDER_FIRST_FRAME}
+        #==========================
+        #""")
 
     #handle render cancel logic
     @persistent
@@ -1231,8 +1225,6 @@ class RenderNotifier:
             self.is_animation = False
             self.job_type = "Still"
             self.blender_data["job_type"] = self.job_type
-            
-        print(f"discord_preview: {self.discord_preview}")
         
         # Prepare image save path
         final_filename = self.tmp_output_name + self.file_extension
@@ -1245,7 +1237,7 @@ class RenderNotifier:
                 try:
                     os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
                     image.save_render(self.final_path)
-                    print(f"✅ Saved image to: {self.final_path}")
+                    #print(f"✅ Saved image to: {self.final_path}")
                     
                     if self.is_discord:
                         self.send_webhook_non_blocking(finished=True)
@@ -1321,7 +1313,7 @@ class RenderNotifier:
         desktop_notify.title = title
         desktop_notify.message = message
         desktop_notify.application_name = "Blender Render Notifier"
-        #desktop_notify.icon = "./resources/images/blender_logo.png"
+        desktop_notify.icon = "./resources/images/blender_logo.png"
         
         # Optionally play a custom sound if enabled
         if self.is_custom_sound:
@@ -1329,22 +1321,13 @@ class RenderNotifier:
                 desktop_notify.audio = self.desktop_sound_path
             else:
                 print(f"⚠️ Custom sound file not found or inaccessible: {self.desktop_sound_path}")
-        #if self.is_custom_sound:
-        #    desktop_notify.audio = self.desktop_sound_path
         
         try:
             desktop_notify.send()
         except Exception as e:
             print(f"⚠️ Failed to send desktop notification: {e}")
 
-
-# register
-##################################
-
-#RenderNotifier = RenderNotifier  # placeholder for later
 notifier_instance = None  # placeholder for later
-
-
 
 classes = [
     RenderNotificationsProperties, 
