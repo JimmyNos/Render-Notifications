@@ -1313,7 +1313,13 @@ class RenderNotifier:
         desktop_notify.title = title
         desktop_notify.message = message
         desktop_notify.application_name = "Blender Render Notifier"
-        desktop_notify.icon = "./resources/images/blender_logo.png"
+        
+        addon_dir = os.path.dirname(__file__)
+        icon_path = os.path.join(addon_dir, "resources", "images", "blender_logo.png")
+        if os.path.exists(icon_path):
+            desktop_notify.icon = icon_path
+        else:
+            print(f"⚠️ Icon file not found: {icon_path}")
         
         # Optionally play a custom sound if enabled
         if self.is_custom_sound:
