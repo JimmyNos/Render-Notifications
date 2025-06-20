@@ -26,6 +26,7 @@ Blender does not expose render progress or time directly to Python, so this add-
 ### 💬 Discord Webhook Integration
 
   - Sends a message to Discord when the render starts, and edits it as rendering progresses.
+    - when the render finishes or get canceled, a second message is sent.
   - Supports preview images:
     - For single-frame renders: shows the final image
     - For animation jobs: shows the first and last frame
@@ -79,7 +80,13 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 11. Once setup in prefrences, you should see a 'Notifications section in the Render propertices'
    Here, you can choose your notification option and what to be notified on.
 
-# Examples
+# 📷 Notification Examples
+
+### 🖥️ Desktop Notification
+
+### 💬 Discord Webhook Message
+
+### 🌐 Webhook Integration (e.g. Home Assistant Push Notification)
 
 ### JSON payload examples
 1.  Still Render
