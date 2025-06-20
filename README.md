@@ -80,16 +80,45 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 11. Once setup in prefrences, you should see a 'Notifications section in the Render propertices'
    Here, you can choose your notification option and what to be notified on.
 
-# 📷 Notification Examples
+## 📷 Notification Examples
 
 ### 🖥️ Desktop Notification
 
+> Example of a local desktop notification when rendering begins or completes.
+
+![Desktop Notification](images/readme_images/desktop_notification.png)
+
+---
+
 ### 💬 Discord Webhook Message
 
-### 🌐 Webhook Integration (e.g. Home Assistant Push Notification)
+> Sent to a Discord channel, includes render status and optionally a preview image.
 
-### JSON payload examples
-1.  Still Render
+**Start Notification**
+
+![Discord Start](images/discord_start.png)
+
+**Progress Update**
+
+![Discord Progress](images/discord_progress.png)
+
+**Render Completion**
+
+![Discord Complete](images/discord_complete.png)
+
+---
+
+### 🌐 Webhook Integration (e.g. Home Assistant)
+
+> Trigger mobile notifications or automations via your custom webhook service.
+
+![Home Assistant Notification](images/homeassistant_notification.png)
+
+---
+
+## 🔄 JSON Payload Examples
+
+### Still Render
 ```
 {
   "call_type": "complete",
@@ -100,7 +129,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
   "total_time_elapsed": "0:00:00.69"
 }
 ```
-2.  Initial Render Start
+### Initial Render Start
 ```
 {
   "call_type": "render_init",
@@ -112,7 +141,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
   "Total_frames_to_render": 6
 }
 ```
-3. After Each Frame Renders
+### After Each Frame Renders
 ```
 {
   "call_type": "render_post",
@@ -133,7 +162,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
   "RENDER_CURRENT_FRAME": "0:00:00.75"
 }
 ```
-4. On Completion
+### On Completion
 ```
 {
   "call_type": "complete",
