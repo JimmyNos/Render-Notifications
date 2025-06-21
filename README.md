@@ -56,21 +56,21 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
   
 2. After installing libraries
    Disable and re-enable the add-on to load the full settings interface.
-   <img alt="notify_prefrances" src="resources/images/readme/Notify_prefrences.png" width="300" />
+<img alt="notify_prefrances" src="resources/images/readme/Notify_prefrences.png" width="200" />
    
-4. Desktop Notifications
+3. Desktop Notifications
    - Enable the custom sound option (optional).
    - Attach your `.wav` file location.
-5. Discord Webhook Settings
+4. Discord Webhook Settings
    - Set a **custom name** (optional).
    - Paste your **Discord webhook URL**.
      - Note: Get the Discord webhook via your channel settings.
    - You can define a **custom render preview save path**:
      - In either the **Preferences** or **Render Properties** tab.
      - If the path in Render Properties is invalid, the Preferences path will be used instead.
-6. Webhook Notifications
+5. Webhook Notifications
    - Paste your **custom webhook URL** (e.g. for Home Assistant).
-7. Render Properties Panel
+6. Render Properties Panel
    - You’ll find a new **Notifications** section.
    - Choose your notification options:
      - Desktop
@@ -78,13 +78,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
        - Choose to send previews
      - Webhook
    - Choose when to be notified: Start, Cancel, First Frame, Completion
-
-10. Paste your discord webhook url and the webhook url from your thrid-party application.
-   - To set up the discord notifications, you will need to create a webhook for your discord channel and paste the url. You can setup a custom name or leave it blank to use the one setup in discord.
-   - you can choose a cutom path for the render previews sent to discord in the prefrences or in the render prepertices. Note: if the location set in the render propertices is invalid, then the location set in prefrnces will take prioraty
-11. Once setup in prefrences, you should see a 'Notifications section in the Render propertices'
-   Here, you can choose your notification option and what to be notified on.
-   <img alt="notify_properties" src="resources/images/readme/Notify_properties.png" width="300" />
+   <img alt="notify_properties" src="resources/images/readme/Notify_properties.png" width="200" />
   
 
 ## 📷 Notification Examples
@@ -93,7 +87,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 > Example of a local desktop notification when rendering begins or completes.
 
-<img alt="Desktop Notification" src="resources/images/readme/desktop_notification.png" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/desktop_notification.png" width="200" />
 
 ---
 
