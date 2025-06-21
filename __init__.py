@@ -861,7 +861,7 @@ class RenderNotifier:
                     self.animation_embed.set_footer(text="[X_ X)")
                     self.animation_embed.colour=discord.Colour.red()
             except Exception as e:
-                print(f"An error occurred in cancel: {e}")  
+                print(f"An error occurred in Ani en_cancel: {e}")  
         else: # it's a still render job
             if self.discord_preview and self.no_preview == False:
                 try: # try to upload the preview images
@@ -873,7 +873,7 @@ class RenderNotifier:
                         print(f"⚠️ File not found: {self.final_path}")
                         self.file = None
                 except Exception as e:
-                    print(f"An error occurred en_com: {e}")
+                    print(f"An error occurred in still en_cancel: {e}")
             self.still_embed.description += "\nCanceled"
             self.still_embed.set_field_at(index=0,name="Job type", value=self.blender_data['job_type'], inline=True)
             self.still_embed.add_field(name="Job Cancelled", value=str(self.blender_data['RENDER_CANCELLED_TIME']), inline=False)
@@ -1240,7 +1240,7 @@ class RenderNotifier:
                     #print(f"✅ Saved image to: {self.final_path}")
                     
                     if self.is_discord:
-                        self.send_webhook_non_blocking(finished=True)
+                        self.send_webhook_non_blocking(canceled=True)
                 except Exception as e:
                     print(f"❌ Error saving image (cancel): {e}")
                     if self.is_animation:
