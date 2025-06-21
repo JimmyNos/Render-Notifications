@@ -86,7 +86,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 > Example of a local desktop notification when rendering begins or completes.
 
-![Desktop Notification](images/readme_images/desktop_notification.png)
+<img alt="Desktop Notification" src="resources/images/readme/desktop_notification.png" width="300" />
 
 ---
 
@@ -96,15 +96,21 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 **Start Notification**
 
-![Discord Start](images/discord_start.png)
+<img alt="discord_anim_init" src="resources/images/readme/discord_anim_init.png" width="300" />
 
-**Progress Update**
+**Rendering**
 
-![Discord Progress](images/discord_progress.png)
+<img alt="discord_animation_preview_rendering" src="resources/images/readme/discord_animation_preview_rendering.png" width="300" /><img alt="discord_animation_rendering" src="resources/images/readme/discord_animation_rendering.png" width="300" /><img alt="discord_still_rendering" src="resources/images/readme/discord_still_rendering.png" width="300" />
 
 **Render Completion**
 
-![Discord Complete](images/discord_complete.png)
+<img alt="discord_still_comp" src="resources/images/readme/discord_still_comp.png" width="300" /><img alt="discord_animation_comp" src="resources/images/readme/discord_animation_comp.png" width="300" /><img alt="discord_ani_preview_comp" src="resources/images/readme/discord_ani_preview_comp.png" width="300" />
+
+
+**Render Cancelled**
+
+<img alt="discord_animation_cencelled.png" src="resources/images/readme/discord_animation_cencelled.png" width="300" /><img alt="discord_still_cencelled" src="resources/images/readme/discord_still_cencelled.png" width="300" />
+
 
 ---
 
@@ -112,7 +118,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 > Trigger mobile notifications or automations via your custom webhook service.
 
-![Home Assistant Notification](images/homeassistant_notification.png)
+![Home Assistant Notification](resources/images/readme/homeassistant_notification.png)
 
 ---
 
