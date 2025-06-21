@@ -96,28 +96,20 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 **Start Notification**
 
-<img alt="Desktop Notification" src="resources/images/readme/discord_init.png" width="300" />
-<img alt="Desktop Notification" src="resources/images/readme/discord_init.png" width="300" />
+<img alt="discord_anim_init" src="resources/images/readme/discord_anim_init.png" width="300" />
 
 **Rendering**
 
-![Desktop Notification](images/readme/discord_animation_preview_rendering.png)
-
-<img alt="Desktop Notification" src="resources/images/readme/discord_animation_preview_rendering.png" width="300" />
-<img alt="Desktop Notification" src="resources/images/readme/discord_animation_rendering.png" width="300" />
-<img alt="Desktop Notification" src="resources/images/readme/discord_still_rendering.png" width="300" />
+<img alt="discord_animation_preview_rendering" src="resources/images/readme/discord_animation_preview_rendering.png" width="300" /><img alt="discord_animation_rendering" src="resources/images/readme/discord_animation_rendering.png" width="300" /><img alt="discord_still_rendering" src="resources/images/readme/discord_still_rendering.png" width="300" />
 
 **Render Completion**
 
-<img alt="Desktop Notification" src="resources/images/readme/discord_still_comp.png" width="200" />
-<img alt="Desktop Notification" src="resources/images/readme/discord_animation_comp.png" width="200" />
-<img alt="Desktop Notification" src="resources/images/readme/discord_ani_preview_comp.png" width="200" />
+<img alt="discord_still_comp" src="resources/images/readme/discord_still_comp.png" width="300" /><img alt="discord_animation_comp" src="resources/images/readme/discord_animation_comp.png" width="300" /><img alt="discord_ani_preview_comp" src="resources/images/readme/discord_ani_preview_comp.png" width="300" />
 
 
 **Render Cancelled**
 
-<img alt="Desktop Notification" src="resources/images/readme/discord_animation_cencelled.png" width="300" />
-<img alt="Desktop Notification" src="resources/images/readme/discord_still_cencelled.png" width="300" />
+<img alt="discord_animation_cencelled.png" src="resources/images/readme/discord_animation_cencelled.png" width="300" /><img alt="discord_still_cencelled" src="resources/images/readme/discord_still_cencelled.png" width="300" />
 
 
 ---
