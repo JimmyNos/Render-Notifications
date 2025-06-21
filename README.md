@@ -96,28 +96,28 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 **Start Notification**
 
-<img alt="Desktop Notification" src="resources/images/readme/discord_init" width="300" />
-<img alt="Desktop Notification" src="resources/images/readme/discord_init" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_init.png" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_init.png" width="300" />
 
 **Rendering**
 
 ![Desktop Notification](images/readme/discord_animation_preview_rendering.png)
 
-<img alt="Desktop Notification" src="resources/images/readme/discord_animation_preview_rendering" width="300" />
-<img alt="Desktop Notification" src="resources/images/readme/discord_animation_rendering" width="300" />
-<img alt="Desktop Notification" src="resources/images/readme/discord_still_rendering" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_animation_preview_rendering.png" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_animation_rendering.png" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_still_rendering.png" width="300" />
 
 **Render Completion**
 
-<img alt="Desktop Notification" src="resources/images/readme/discord_still_comp" width="300" />
-<img alt="Desktop Notification" src="resources/images/readme/discord_animation_comp" width="300" />
-<img alt="Desktop Notification" src="resources/images/readme/discord_ani_preview_comp" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_still_comp.png" width="200" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_animation_comp.png" width="200" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_ani_preview_comp.png" width="200" />
 
 
 **Render Cancelled**
 
-<img alt="Desktop Notification" src="resources/images/readme/discord_animation_cencelled" width="300" />
-<img alt="Desktop Notification" src="resources/images/readme/discord_still_cencelled" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_animation_cencelled.png" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_still_cencelled.png" width="300" />
 
 
 ---
