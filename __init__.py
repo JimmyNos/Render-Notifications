@@ -1358,7 +1358,6 @@ def register():
         Notify = NotifyClass
         DiscordWebhook = DiscordWebhookClass
         DiscordEmbed = DiscordEmbedClass
-        #import libion
     except ImportError:
         Notify = None
         discord = None
