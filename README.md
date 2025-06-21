@@ -109,7 +109,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 **Render Cancelled**
 
-<img alt="discord_animation_cencelled.png" src="resources/images/readme/discord_animation_cencelled.png" width="300" /><img alt="discord_still_cencelled" src="resources/images/readme/discord_still_cencelled.png" width="300" />
+<img alt="discord_animation_cencelled.png" src="resources/images/readme/discord_animation_cencelled.png" width="300" /><img alt="discord_still_cencelled" src="resources/images/readme/discord_still_cencelled.png" width="400" />
 
 
 ### 🌐 Webhook Integration (e.g. Home Assistant)
