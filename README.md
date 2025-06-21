@@ -86,7 +86,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 > Example of a local desktop notification when rendering begins or completes.
 
-![Desktop Notification](images/readme_images/desktop_notification.png)
+<img alt="Desktop Notification" src="resources/images/readme/desktop_notification.png" width="300" />
 
 ---
 
@@ -96,15 +96,29 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 **Start Notification**
 
-![Discord Start](images/discord_start.png)
+<img alt="Desktop Notification" src="resources/images/readme/discord_init" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_init" width="300" />
 
-**Progress Update**
+**Rendering**
 
-![Discord Progress](images/discord_progress.png)
+![Desktop Notification](images/readme/discord_animation_preview_rendering.png)
+
+<img alt="Desktop Notification" src="resources/images/readme/discord_animation_preview_rendering" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_animation_rendering" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_still_rendering" width="300" />
 
 **Render Completion**
 
-![Discord Complete](images/discord_complete.png)
+<img alt="Desktop Notification" src="resources/images/readme/discord_still_comp" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_animation_comp" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_ani_preview_comp" width="300" />
+
+
+**Render Cancelled**
+
+<img alt="Desktop Notification" src="resources/images/readme/discord_animation_cencelled" width="300" />
+<img alt="Desktop Notification" src="resources/images/readme/discord_still_cencelled" width="300" />
+
 
 ---
 
@@ -112,7 +126,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 > Trigger mobile notifications or automations via your custom webhook service.
 
-![Home Assistant Notification](images/homeassistant_notification.png)
+![Home Assistant Notification](resources/images/readme/homeassistant_notification.png)
 
 ---
 
