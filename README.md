@@ -51,21 +51,26 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
    - `discord.py`
    - `aiohttp`
    If these are missing, they can be installed from within the Add-on Preferences.
+> ⚠️ Note: blender will become inactive while it installs the libraries. you can open the blender console before hitting install to view the output.
+   <img alt="Notify_prefrences_install" src="resources/images/readme/Notify_prefrences_install.png" width="300" />
+  
 2. After installing libraries
    Disable and re-enable the add-on to load the full settings interface.
-3. Desktop Notifications
+   <img alt="notify_prefrances" src="resources/images/readme/Notify_prefrences.png" width="300" />
+   
+4. Desktop Notifications
    - Enable the custom sound option (optional).
    - Attach your `.wav` file location.
-4. Discord Webhook Settings
+5. Discord Webhook Settings
    - Set a **custom name** (optional).
    - Paste your **Discord webhook URL**.
      - Note: Get the Discord webhook via your channel settings.
    - You can define a **custom render preview save path**:
      - In either the **Preferences** or **Render Properties** tab.
      - If the path in Render Properties is invalid, the Preferences path will be used instead.
-5. Webhook Notifications
+6. Webhook Notifications
    - Paste your **custom webhook URL** (e.g. for Home Assistant).
-6. Render Properties Panel
+7. Render Properties Panel
    - You’ll find a new **Notifications** section.
    - Choose your notification options:
      - Desktop
@@ -79,6 +84,8 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
    - you can choose a cutom path for the render previews sent to discord in the prefrences or in the render prepertices. Note: if the location set in the render propertices is invalid, then the location set in prefrnces will take prioraty
 11. Once setup in prefrences, you should see a 'Notifications section in the Render propertices'
    Here, you can choose your notification option and what to be notified on.
+   <img alt="notify_properties" src="resources/images/readme/Notify_properties.png" width="300" />
+  
 
 ## 📷 Notification Examples
 
@@ -100,17 +107,16 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 **Rendering**
 
-<img alt="discord_animation_preview_rendering" src="resources/images/readme/discord_animation_preview_rendering.png" width="300" /><img alt="discord_animation_rendering" src="resources/images/readme/discord_animation_rendering.png" width="300" /><img alt="discord_still_rendering" src="resources/images/readme/discord_still_rendering.png" width="300" />
+<img alt="discord_animation_rendering" src="resources/images/readme/discord_animation_rendering.png" width="300" /><img alt="discord_still_rendering" src="resources/images/readme/discord_still_rendering.png" width="300" />
 
 **Render Completion**
 
-<img alt="discord_still_comp" src="resources/images/readme/discord_still_comp.png" width="300" /><img alt="discord_animation_comp" src="resources/images/readme/discord_animation_comp.png" width="300" /><img alt="discord_ani_preview_comp" src="resources/images/readme/discord_ani_preview_comp.png" width="300" />
+<img alt="discord_still_comp" src="resources/images/readme/discord_still_comp.png" width="300" /><img alt="discord_animation_comp" src="resources/images/readme/discord_animation_comp.png" width="300" />
 
 
 **Render Cancelled**
 
 <img alt="discord_animation_cencelled.png" src="resources/images/readme/discord_animation_cencelled.png" width="300" /><img alt="discord_still_cencelled" src="resources/images/readme/discord_still_cencelled.png" width="300" />
-
 
 ---
 
