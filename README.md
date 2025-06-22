@@ -197,3 +197,4 @@ This project is licensed under the GNU General Public License v3 (GPLv3).
 # 🙋‍♂️ Author
 Made with ☕ and 🧠 by Michael Mosako.
 Consider [buying me a coffee](https://buymeacoffee.com/jimmynostar).
+Check out my animations on YouTube: [YouTube Channel](https://www.youtube.com/@JimmyNoStar).
