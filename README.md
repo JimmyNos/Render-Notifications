@@ -195,4 +195,4 @@ This project is licensed under the GNU General Public License v3 (GPLv3).
 
 # 🙋‍♂️ Author
 Made with ☕ and 🧠 by Michael Mosako.
-If you'd like to support the project, consider [buying me a coffee](https://buymeacoffee.com/jimmynostar).
+Consider [buying me a coffee](https://buymeacoffee.com/jimmynostar).
