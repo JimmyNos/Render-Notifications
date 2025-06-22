@@ -751,7 +751,7 @@ class RenderNotifier:
                 self.animation_embed.set_field_at(index=5,name="Frame time", value=self.blender_data['RENDER_CURRENT_FRAME'], inline=True)
                 self.animation_embed.set_field_at(index=6,name="Est. next frame", value=self.blender_data['next_frame_countdown'], inline=True)
                 self.animation_embed.set_field_at(index=7,name="Avarage per frame", value=f"{self.blender_data['average_time']}", inline=True)
-                self.animation_embed.set_field_at(index=8,name="Est. render job" + self.blender_data['countdown'], value=self.blender_data['est_render_job'], inline=False)
+                self.animation_embed.set_field_at(index=8,name=f"Est. render job {self.blender_data['countdown']}", value=self.blender_data['est_render_job'], inline=False)
       
     # Load new data into embeds when the render job is complete  
     def em_complete(self,isAnimation):
