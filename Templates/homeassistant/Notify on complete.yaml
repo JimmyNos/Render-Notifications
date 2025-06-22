@@ -1,0 +1,25 @@
+alias: Blender Notify on complete
+description: ""
+triggers:
+  - trigger: webhook
+    allowed_methods:
+      - POST
+      - PUT
+    local_only: true
+    webhook_id: "-blender3XsCcti0V19vzX-"
+conditions:
+  - condition: template
+    value_template: |
+      {{ trigger.json.call_type == 'complete' }}
+    enabled: true
+actions:
+  - device_id: your_device_id_here
+    domain: mobile_app
+    type: notify
+    title: Render Job Complete
+    message: |
+      Project: {{ trigger.json.project_name }}
+      Type: {{ trigger.json.job_type }}
+      Time: {{ trigger.json.total_time_elapsed }}
+    enabled: true
+mode: single

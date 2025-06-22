@@ -1,0 +1,34 @@
+alias: Blender Notify on first frame
+description: ""
+triggers:
+  - trigger: webhook
+    allowed_methods:
+      - POST
+      - PUT
+    local_only: true
+    webhook_id: "-blender3XsCcti0V19vzX-"
+conditions:
+  - condition: template
+    value_template: |
+      {{ trigger.json.job_type == 'Animation' }}
+    enabled: true
+  - condition: template
+    value_template: |
+      {{ trigger.json.call_type == 'render_post' }}
+    enabled: true
+  - condition: template
+    value_template: |
+      {{ trigger.json.frames_rendered == 1 }}
+    enabled: true
+actions:
+  - device_id: your_device_id_here
+    domain: mobile_app
+    type: notify
+    title: Render Job First Frame
+    message: |
+      Project: {{ trigger.json.project_name }}
+      Type: {{ trigger.json.job_type }}
+      Time: {{ trigger.json.RENDER_FIRST_FRAME }}
+      est render job: {{ trigger.json.est_render_job }}
+    enabled: true
+mode: single

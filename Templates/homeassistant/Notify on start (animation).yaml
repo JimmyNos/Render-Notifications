@@ -1,0 +1,32 @@
+alias: Blender Notify on start (animation)
+description: ""
+triggers:
+  - trigger: webhook
+    allowed_methods:
+      - POST
+      - PUT
+    local_only: true
+    webhook_id: "-blender3XsCcti0V19vzX-"
+conditions:
+  - condition: template
+    value_template: |
+      {{ trigger.json.call_type == 'render_init' }}
+    enabled: true
+  - condition: template
+    value_template: |
+      {{ trigger.json.job_type == 'Animation' }}
+    enabled: true
+actions:
+  - device_id: your_device_id_here
+    domain: mobile_app
+    type: notify
+    title: Render Job Started
+    message: >
+      Project: {{ trigger.json.project_name }}
+
+      Type: {{ trigger.json.job_type }}
+
+      Total frames: {{ trigger.json.total_frames }} ({{ trigger.json.frame_range
+      }})
+    enabled: true
+mode: single

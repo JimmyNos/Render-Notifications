@@ -1,0 +1,26 @@
+alias: Blender Notify on cancel
+description: ""
+triggers:
+  - trigger: webhook
+    allowed_methods:
+      - POST
+      - PUT
+    local_only: true
+    webhook_id: "-blender3XsCcti0V19vzX-"
+conditions:
+  - condition: template
+    value_template: |
+      {{ trigger.json.call_type == 'cancel' }}
+    enabled: true
+actions:
+  - device_id: your_device_id_here
+    domain: mobile_app
+    type: notify
+    title: Render Job Cancelled
+    message: |
+      Project: {{ trigger.json.project_name }}
+      Type: {{ trigger.json.job_type }} 
+      Frame: {{ trigger.json.frame }} 
+      Time elapsed: {{ trigger.json.RENDER_CANCELLED_TIME }}
+    enabled: true
+mode: single
