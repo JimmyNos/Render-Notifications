@@ -85,14 +85,14 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 ### 🖥️ Desktop Notification
 
-> Example of a local desktop notification when rendering begins or completes.
+> Examples of local desktop notifications.
 
 <img alt="Desktop Notification" src="resources/images/readme/desktop_notification.png" width="200" />
 
 
 ### 💬 Discord Webhook Message
 
-> Sent to a Discord channel, includes render status and optionally a preview image.
+> Examples of Discord messages sent with optional a preview image.
 
 **Start Notification**
 
@@ -114,9 +114,9 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 ### 🌐 Webhook Integration (e.g. Home Assistant)
 
-> Trigger mobile notifications or automations via your custom webhook service.
+> Examples of mobile notifications sent via homeassistant
 
-![Home Assistant Notification](resources/images/readme/homeassistant_notification.png)
+<img alt="homeassistant_animation_job" src="resources/images/readme/homeassistant_animation_job.jpg" width="300" /><img alt="homeassistant_still_job" src="resources/images/readme/homeassistant_still_job.jpg" width="300" />
 
 ---
 
