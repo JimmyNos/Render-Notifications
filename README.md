@@ -115,6 +115,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 ### 🌐 Webhook Integration (e.g. Home Assistant)
 
 > Examples of mobile notifications sent via homeassistant
+> Homeassisstant automation yaml files can be found in the tmepletes folder
 
 <img alt="homeassistant_animation_job" src="resources/images/readme/homeassistant_animation_job.jpg" width="300" /><img alt="homeassistant_still_job" src="resources/images/readme/homeassistant_still_job.jpg" width="300" />
 
@@ -195,4 +196,4 @@ This project is licensed under the GNU General Public License v3 (GPLv3).
 
 # 🙋‍♂️ Author
 Made with ☕ and 🧠 by Michael Mosako.
-If you'd like to support the project, consider [buying me a coffee](https://buymeacoffee.com/jimmynostar).
+Consider [buying me a coffee](https://buymeacoffee.com/jimmynostar).
