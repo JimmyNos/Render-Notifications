@@ -115,7 +115,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 ### 🌐 Webhook Integration (e.g. Home Assistant)
 
 > Examples of mobile notifications sent via homeassistant
-> Homeassisstant automation yaml files can be found in the tmepletes folder
+> Homeassisstant automation yaml files can be found in the tmepletes folder. `Replace your_device_id_here` with your actual **mobile device id**. Which to ui mode in automations and you should be able to search and select you device.
 
 <img alt="homeassistant_animation_job" src="resources/images/readme/homeassistant_animation_job.jpg" width="300" /><img alt="homeassistant_still_job" src="resources/images/readme/homeassistant_still_job.jpg" width="300" />
 
