@@ -1,5 +1,5 @@
 alias: Blender Notify on complete
-description: ""
+description: "Send a notification when a render job completes"
 triggers:
   - trigger: webhook
     allowed_methods:

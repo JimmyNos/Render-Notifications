@@ -1,5 +1,5 @@
 alias: Blender Notify on start (animation)
-description: ""
+description: "Send a notification when an animation render job starts"
 triggers:
   - trigger: webhook
     allowed_methods:

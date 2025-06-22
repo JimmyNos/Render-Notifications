@@ -1,5 +1,5 @@
 alias: Blender Notify on first frame
-description: ""
+description: "Send a notification when the first frame of a render job has rendered"
 triggers:
   - trigger: webhook
     allowed_methods:

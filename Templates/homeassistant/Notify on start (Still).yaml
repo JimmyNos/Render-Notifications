@@ -1,5 +1,5 @@
 alias: Blender Notify on start (Still)
-description: ""
+description: "Send a notification when a still render job starts"
 triggers:
   - trigger: webhook
     allowed_methods:
