@@ -555,7 +555,10 @@ class RenderNotifier:
                 
                 await self.send_on_cancel(full_hook, webhook)
             elif self.blender_data["frames_rendered"] == 1:
-                await webhook.edit_message(self.message_id, embed=self.animation_embed)
+                if has_attch:
+                    await webhook.edit_message(self.message_id, embed=self.animation_embed,attachments=[self.thumbfile])
+                else:
+                    await webhook.edit_message(self.message_id, embed=self.animation_embed)
             else:
                 await webhook.edit_message(self.message_id, embed=self.animation_embed)
         
