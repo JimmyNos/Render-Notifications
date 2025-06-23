@@ -1,4 +1,10 @@
 # 🛎️ Render Notifications – Blender Add-on
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/JimmyNos/Render-Notifications)
+![GitHub all releases](https://img.shields.io/github/downloads/JimmyNos/Render-Notifications/total)
+![License](https://img.shields.io/github/license/JimmyNos/Render-Notifications)
+![Repo size](https://img.shields.io/github/repo-size/JimmyNos/Render-Notifications)
+![Last commit](https://img.shields.io/github/last-commit/JimmyNos/Render-Notifications)
+
 **Render Notifications** is a Blender add-on that sends notifications when a render **starts**, **finishes**, or gets **canceled** using **Discord**, **desktop notifications**, or **webhooks** for custom platforms like **Home Assistant**.
 
 Blender does not expose render progress or time directly to Python, so this add-on calculates the following after each frame:
@@ -114,7 +120,7 @@ Once enabled, the add-on panel will appear in the Render Properties tab.
 
 ### 🌐 Webhook Integration (e.g. Home Assistant)
 
-> Examples of mobile notifications sent via homeassistant
+> Examples of mobile notifications sent via homeassistant.
 > Homeassisstant automation yaml files can be found in the tmepletes folder. Replace `your_device_id_here` with your actual **mobile device id**. Which to ui mode in automations and you should be able to search and select you device.
 
 <img alt="homeassistant_animation_job" src="resources/images/readme/homeassistant_animation_job.jpg" width="300" /><img alt="homeassistant_still_job" src="resources/images/readme/homeassistant_still_job.jpg" width="300" />
@@ -197,3 +203,4 @@ This project is licensed under the GNU General Public License v3 (GPLv3).
 # 🙋‍♂️ Author
 Made with ☕ and 🧠 by Michael Mosako.
 Consider [buying me a coffee](https://buymeacoffee.com/jimmynostar).
+Check out my animations on YouTube: [YouTube Channel](https://www.youtube.com/@JimmyNoStar).
