@@ -5,7 +5,7 @@
 ![Repo size](https://img.shields.io/github/repo-size/JimmyNos/Render-Notifications)
 ![Last commit](https://img.shields.io/github/last-commit/JimmyNos/Render-Notifications)
 
-**Render Notifications** is a Blender add-on that sends notifications when a render **starts**, **finishes**, or gets **canceled** using **Discord**, **desktop notifications**, or **webhooks** for custom platforms like **Home Assistant**.
+**Render Notifications** is a Blender add-on that sends notifications when a render **starts**, **finishes**, or gets **cancelled** using **Discord**, **desktop notifications**, or **webhooks** for custom platforms like **Home Assistant**.
 
 Blender does not expose render progress or time directly to Python, so this add-on calculates the following after each frame:
 - Render time
