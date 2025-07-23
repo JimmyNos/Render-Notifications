@@ -12,6 +12,7 @@ Blender does not expose render progress or time directly to Python, so this add-
 - Average time per frame
 - Estimated total render time
 - Frames remaining and percentage complete
+pip download discord.py==2.5.2 --dest ./wheels --only-binary=:all: --platform win_amd64 --python-version 3.11 --implementation cp --abi cp311
 
 ---
 

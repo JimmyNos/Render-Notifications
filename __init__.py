@@ -14,16 +14,16 @@
 # You should have received a copy of the GNU General Public License 
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-bl_info = {
-    "name": "Render Notifications",
-    "author": "Michael Mosako (JimmyNoStar)",
-    "version": (1, 0, 0),
-    "blender": (4, 3, 2),
-    "location": "Render properties",
-    "description": "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled.",
-    "wiki_url": "https://github.com/JimmyNos/Render-Notifications",
-    "category": "Render"
-}
+#bl_info = {
+#    "name": "Render Notifications",
+#    "author": "Michael Mosako (JimmyNoStar)",
+#    "version": (1, 0, 0),
+#    "blender": (4, 3, 2),
+#    "location": "Render properties",
+#    "description": "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled.",
+#    "wiki_url": "https://github.com/JimmyNos/Render-Notifications",
+#    "category": "Render"
+#}
 
 import time
 import bpy
@@ -107,7 +107,7 @@ class RenderNotifications_OT_InstallDeps(bpy.types.Operator):
         success_notify = install_package("notify-py")
         success_discord = install_package("discord")
         success_aiohttp = install_package("aiohttp")
-
+        
         if success_discord and success_aiohttp and success_notify:
             #self.report({'INFO'}, "Dependencies installed successfully.")
             bpy.context.preferences.addons[__name__].preferences.is_installed = True
@@ -120,7 +120,7 @@ class RenderNotifications_OT_InstallDeps(bpy.types.Operator):
 
 # Define the addon preferences class
 class RenderNotificationsPreferences(AddonPreferences):
-    bl_idname = __name__
+    bl_idname = __package__
     
     #properties for installing libraries
     is_installed: BoolProperty( # type: ignore
@@ -688,7 +688,7 @@ class RenderNotifier:
             self.animation_embed.add_field(name="Frame time", value="...", inline=True)
             self.animation_embed.add_field(name="Est. next frame", value="...", inline=True)
             self.animation_embed.add_field(name="Avarage per frame", value="...", inline=False)
-            self.animation_embed.add_field(name="Est. render job", value="...", inline=True)
+            self.animation_embed.add_field(name="Est. render job ", value="...", inline=True)
             self.animation_embed.add_field(name="Total est. time", value="...", inline=True)
             self.animation_embed.add_field(name="Total time elapsed", value="...", inline=True)
             self.animation_embed.set_footer(text="*(^◕.◕^)*")

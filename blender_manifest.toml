@@ -1,0 +1,87 @@
+schema_version = "1.1.0"
+
+# Change the values according to your extension
+id = "render_notifications_extension"
+version = "1.1.0"
+name = "Render Notifications"
+tagline = "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled."
+maintainer = "Michael Mosako (JimmyNoStar)"
+type = "add-on"
+
+# Optional: link to documentation, support, source files, etc
+website = "https://github.com/JimmyNos/Render-Notifications"
+
+
+# Optional: tag list defined by Blender and server, see:
+# https://docs.blender.org/manual/en/dev/advanced/extensions/tags.html
+tags = ["Render", "System"]
+
+blender_version_min = "4.3.2"
+# # Optional: Blender version that the extension does not support, earlier versions are supported.
+# # This can be omitted and defined later on the extensions platform if an issue is found.
+# blender_version_max = "5.1.0"
+
+# License conforming to https://spdx.org/licenses/ (use "SPDX: prefix)
+# https://docs.blender.org/manual/en/dev/advanced/extensions/licenses.html
+license = [
+  "SPDX:GPL-3.0-or-later",
+]
+# # Optional: required by some licenses.
+# copyright = [
+#   "2002-2024 Developer Name",
+#   "1998 Company Name",
+# ]
+
+# Optional: list of supported platforms. If omitted, the extension will be available in all operating systems.
+platforms = ["windows-x64"]
+# # Other supported platforms: "windows-arm64", "macos-x64"
+
+# Optional: bundle 3rd party Python modules.
+# https://docs.blender.org/manual/en/dev/advanced/extensions/python_wheels.html
+wheels = [
+  "./wheels/aiohappyeyeballs-2.6.1-py3-none-any.whl",
+  "./wheels/aiohttp-3.12.14-cp311-cp311-win_amd64.whl",
+  "./wheels/aiosignal-1.4.0-py3-none-any.whl",
+  "./wheels/attrs-25.3.0-py3-none-any.whl",
+  "./wheels/colorama-0.4.6-py2.py3-none-any.whl",
+  "./wheels/discord_py-2.5.2-py3-none-any.whl",
+  "./wheels/frozenlist-1.7.0-cp311-cp311-win_amd64.whl",
+  "./wheels/idna-3.10-py3-none-any.whl",
+  "./wheels/loguru-0.6.0-py3-none-any.whl",
+  "./wheels/multidict-6.6.3-cp311-cp311-win_amd64.whl",
+  "./wheels/notify_py-0.3.43-py3-none-any.whl",
+  "./wheels/propcache-0.3.2-cp311-cp311-win_amd64.whl",
+  "./wheels/typing_extensions-4.14.1-py3-none-any.whl",
+  "./wheels/win32_setctime-1.2.0-py3-none-any.whl",
+  "./wheels/yarl-1.20.1-cp311-cp311-win_amd64.whl",
+]
+
+# # Optional: add-ons can list which resources they will require:
+# # * files (for access of any filesystem operations)
+# # * network (for internet access)
+# # * clipboard (to read and/or write the system clipboard)
+# # * camera (to capture photos and videos)
+# # * microphone (to capture audio)
+# #
+# # If using network, remember to also check `bpy.app.online_access`
+# # https://docs.blender.org/manual/en/dev/advanced/extensions/addons.html#internet-access
+# #
+# # For each permission it is important to also specify the reason why it is required.
+# # Keep this a single short sentence without a period (.) at the end.
+# # For longer explanations use the documentation or detail page.
+#
+[permissions]
+network = "Need to send notifications via webhooks and Discord."
+# files = "Import/export FBX from/to disk"
+# clipboard = "Copy and paste bone transforms"
+
+# # Optional: advanced build settings.
+# # https://docs.blender.org/manual/en/dev/advanced/extensions/command_line_arguments.html#command-line-args-extension-build
+# [build]
+# # These are the default build excluded patterns.
+# # You only need to edit them if you want different options.
+# paths_exclude_pattern = [
+#   "__pycache__/",
+#   "/.git/",
+#   "/*.zip",
+# ]
