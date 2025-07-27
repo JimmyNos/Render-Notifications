@@ -1,9 +1,12 @@
-# 🛎️ Render Notifications – Blender Add-on
+# 🛎️ Render Notifications – Blender (Legacy) Add-on
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/JimmyNos/Render-Notifications)
-![GitHub all releases](https://img.shields.io/github/downloads/JimmyNos/Render-Notifications/total)
 ![License](https://img.shields.io/github/license/JimmyNos/Render-Notifications)
 ![Repo size](https://img.shields.io/github/repo-size/JimmyNos/Render-Notifications)
-![Last commit](https://img.shields.io/github/last-commit/JimmyNos/Render-Notifications)
+
+> ⚠️ Legacy Notice: This branch contains the legacy version of the Render Notifications add-on, designed for Blender’s traditional add-on system.
+> The project has now moved to the new Blender Extensions system.
+> 
+> 👉 For the latest version, please switch to the main branch or visit the [Render Notifications Extension](https://github.com/JimmyNos/Render-Notifications) branch.
 
 **Render Notifications** is a Blender add-on that sends notifications when a render **starts**, **finishes**, or gets **cancelled** using **Discord**, **desktop notifications**, or **webhooks** for custom platforms like **Home Assistant**.
 
