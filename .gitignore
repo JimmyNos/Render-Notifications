@@ -19,7 +19,6 @@ lib64/
 parts/
 sdist/
 var/
-wheels/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
@@ -130,7 +129,6 @@ __pypackages__/
 # Celery stuff
 celerybeat-schedule
 celerybeat.pid
-
 # SageMath parsed files
 *.sage.py
 

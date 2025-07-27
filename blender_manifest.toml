@@ -3,7 +3,7 @@ schema_version = "1.1.0"
 id = "render_notifications_extension"
 version = "1.1.0"
 name = "Render Notifications"
-tagline = "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled."
+tagline = "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled"
 maintainer = "Michael Mosako (JimmyNoStar)"
 type = "add-on"
 website = "https://github.com/JimmyNos/Render-Notifications"
@@ -34,7 +34,7 @@ wheels = [
 ]
 
 [permissions]
-network = "Need to send notifications via webhooks and Discord."
+network = "Needed to send notifications via webhooks and Discord"
 
 # Optional: advanced build settings.
 # https://docs.blender.org/manual/en/dev/advanced/extensions/command_line_arguments.html#command-line-args-extension-build
