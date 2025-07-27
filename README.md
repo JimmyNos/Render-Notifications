@@ -48,7 +48,7 @@ Blender does not expose render progress or time directly to Python, so this add-
 
 ## 🧩 Installation
 1. Download the latest version of the extension as a `.zip` file.
-2. In Blender, go to **Edit > Preferences > Get Extentions**.
+2. In Blender, go to **Edit > Preferences > Get Extensions**.
 3. Click **Install from disk** and select the **.zip** file.
 4. Blender will then install the extension and a new Notifications section will appear in the Render Properties tab.
 
