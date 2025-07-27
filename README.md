@@ -7,14 +7,13 @@
 ![Repo size](https://img.shields.io/github/repo-size/JimmyNos/Render-Notifications)
 ![Last commit](https://img.shields.io/github/last-commit/JimmyNos/Render-Notifications)
 
-**Render Notifications** is a Blender add-on that sends notifications when a render **starts**, **finishes**, or gets **cancelled** using **Discord**, **desktop notifications**, or **webhooks** for custom platforms like **Home Assistant**.
+**Render Notifications** is a Blender extention that sends notifications when a render **starts**, **finishes**, or gets **cancelled** using **Discord**, **desktop notifications**, or **webhooks** for custom platforms like **Home Assistant**.
 
 Blender does not expose render progress or time directly to Python, so this add-on calculates the following after each frame:
 - Render time
 - Average time per frame
 - Estimated total render time
 - Frames remaining and percentage complete
-pip download discord.py==2.5.2 --dest ./wheels --only-binary=:all: --platform win_amd64 --python-version 3.11 --implementation cp --abi cp311
 
 ---
 
@@ -46,40 +45,26 @@ pip download discord.py==2.5.2 --dest ./wheels --only-binary=:all: --platform wi
 - Perfect for integrations with mobile alerts, dashboards, or automation workflows.
 
 ## 🧩 Installation
-1. Download the latest version of the add-on as a `.zip` file.
-2. In Blender, go to **Edit > Preferences > Add-ons**.
-3. Click Install… and select the **.zip** file.
-4. Enable the add-on from the list.
+1. Download the latest version of the extension as a `.zip` file.
+2. In Blender, go to **Edit > Preferences > Get Extentions**.
+3. Click **Install from disk** and select the **.zip** file.
+4. Blender will then install the extension and a new Notifications section will appear in the Render Properties tab..
 
 ## 🔧 Configuration
-Once enabled, the add-on panel will appear in the Render Properties tab.
-###⚙️ Setup
-1. Dependencies
-   The add-on uses external Python libraries:
-   - `notify-py`
-   - `discord.py`
-   - `aiohttp`
-   If these are missing, they can be installed from within the Add-on Preferences.
-> ⚠️ Note: blender will become inactive while it installs the libraries. you can open the blender console before hitting install to view the output.
-   <img alt="Notify_prefrences_install" src="resources/images/readme/Notify_prefrences_install.png" width="300" />
-  
-2. After installing libraries
-   Disable and re-enable the add-on to load the full settings interface.
-<img alt="notify_prefrances" src="resources/images/readme/Notify_prefrences.png" width="200" />
-   
-3. Desktop Notifications
+### ⚙️ Setup
+1. Desktop Notifications
    - Enable the custom sound option (optional).
    - Attach your `.wav` file location.
-4. Discord Webhook Settings
+2. Discord Webhook Settings
    - Set a **custom name** (optional).
    - Paste your **Discord webhook URL**.
      - Note: Get the Discord webhook via your channel settings.
    - You can define a **custom render preview save path**:
      - In either the **Preferences** or **Render Properties** tab.
      - If the path in Render Properties is invalid, the Preferences path will be used instead.
-5. Webhook Notifications
+3. Webhook Notifications
    - Paste your **custom webhook URL** (e.g. for Home Assistant).
-6. Render Properties Panel
+4. Render Properties Panel
    - You’ll find a new **Notifications** section.
    - Choose your notification options:
      - Desktop
