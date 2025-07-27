@@ -14,16 +14,16 @@
 # You should have received a copy of the GNU General Public License 
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-bl_info = {
-    "name": "Render Notifications",
-    "author": "Michael Mosako (JimmyNoStar)",
-    "version": (1, 0, 0),
-    "blender": (4, 3, 2),
-    "location": "Render properties",
-    "description": "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled.",
-    "wiki_url": "https://github.com/JimmyNos/Render-Notifications",
-    "category": "Render"
-}
+#bl_info = {
+#    "name": "Render Notifications",
+#    "author": "Michael Mosako (JimmyNoStar)",
+#    "version": (1, 0, 0),
+#    "blender": (4, 3, 2),
+#    "location": "Render properties",
+#    "description": "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled.",
+#    "wiki_url": "https://github.com/JimmyNos/Render-Notifications",
+#    "category": "Render"
+#}
 
 import time
 import bpy
@@ -40,98 +40,17 @@ import asyncio
 from datetime import datetime
 import threading
 
-# This class is used to get the python executable path based on the OS
-class Get_sys_path():
-    @staticmethod
-    def isWindows():
-        return os.name == 'nt'
-
-    @staticmethod
-    def isMacOS():
-        return os.name == 'posix' and platform.system() == "Darwin"
-
-    @staticmethod
-    def isLinux():
-        return os.name == 'posix' and platform.system() == "Linux"
-
-    @staticmethod
-    def python_exec():
-        
-        if Get_sys_path.isWindows():
-            return os.path.join(sys.prefix, 'bin', 'python.exe')
-        elif Get_sys_path.isMacOS():
-            try:
-                # 2.92 and older
-                path = bpy.app.binary_path_python
-            except AttributeError:
-                # 2.93 and later
-                path = sys.executable
-            return os.path.abspath(path)
-        elif Get_sys_path.isLinux():
-            return os.path.join(sys.prefix, 'bin', 'python3.11')
-        else:
-            print("sorry, still not implemented for ", os.name, " - ", platform.system())
-            return sys.executable  # Safe fallback
-
-def install_package(pkg_name):
-    user_site = site.getusersitepackages()
-    
-    # Check if user site-packages path is in sys.path
-    if user_site not in sys.path:
-        sys.path.append(user_site)
-        print(f"✅ Added user site-packages path: {user_site}")
-    else:
-        print(f"✅ Already in user site-packages path: {user_site}")
-        
-    get_sys_path = Get_sys_path()
-    python_exe = get_sys_path.python_exec()
-    
-    try:
-        print("installing missing libaries")
-        subprocess.run([python_exe, '-m', 'ensurepip'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
-        subprocess.run([python_exe, '-m', 'pip', 'install', '--upgrade', 'pip'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
-        
-        subprocess.run([python_exe, "-m", "pip", "install", pkg_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
-        return True
-    except Exception as e:
-        print(f"Install failed: {e}")
-        return False
-
-# Will try to import the required packages, if not installed, will set them to None
-class RenderNotifications_OT_InstallDeps(bpy.types.Operator):
-    bl_idname = "rendernotify.install_deps"
-    bl_label = "Install notify-py, discord.py and aiohttp"
-    addon_name = __package__
-
-    def execute(self, context):
-        success_notify = install_package("notify-py")
-        success_discord = install_package("discord")
-        success_aiohttp = install_package("aiohttp")
-
-        if success_discord and success_aiohttp and success_notify:
-            #self.report({'INFO'}, "Dependencies installed successfully.")
-            bpy.context.preferences.addons[__name__].preferences.is_installed = True
-            bpy.context.preferences.addons[__name__].preferences.installed_msg = "Libraries are now installed. Warning: please reload the addon!"
-            self.report({'INFO'}, "Dependencies installed. Please disable and re-enable the addon.")
-
-        else:
-            self.report({'ERROR'}, "Failed to install one or more packages.")
-        return {'FINISHED'}
+import discord
+import aiohttp
+from notifypy import Notify as NotifyClass
+from discord import Webhook as DiscordWebhookClass, Embed as DiscordEmbedClass
+Notify = NotifyClass
+DiscordWebhook = DiscordWebhookClass
+DiscordEmbed = DiscordEmbedClass
 
 # Define the addon preferences class
 class RenderNotificationsPreferences(AddonPreferences):
-    bl_idname = __name__
-    
-    #properties for installing libraries
-    is_installed: BoolProperty( # type: ignore
-        name="Is Installed",
-        description="Indicates if the addon is installed correctly",
-        default=False
-    ) 
-    installed_msg: StringProperty( #type: ignore
-        name="libraries installed message",
-        description="Message showen after libraries have been installed"
-    ) 
+    bl_idname = __package__
     
     ## Desktop ##
     custom_sound: BoolProperty( #type: ignore
@@ -176,56 +95,38 @@ class RenderNotificationsPreferences(AddonPreferences):
         layout = self.layout
         layout.label(text="Setup notifications")
         
-        install_box = layout.box()
-        row = install_box.row(align=False,heading="test")
-        if None in (Notify, discord, aiohttp): # If libraries are missing, then extra labels and a button to intall then will appear 
-            install_col = install_box.column()
-            install_col.label(text="Missing libraries: notifypy, discord.py, aiohttp")
-            install_col.label(text="Please install them to use the plugin!")
-            install_col.operator("rendernotify.install_deps", text="Install missing libraries",icon="CANCEL")
-            if self.is_installed:
-                row = install_box.row()
-                row.label(text=self.installed_msg)
-                row.label(icon="CHECKMARK")
-        else:
-            #print(f"is_installed: {self.is_installed}")      
-            row.label(text="All libraries are installed.")
-            row.label(icon="CHECKMARK")
-            self.is_installed = True
+        ## Desktop ##
+        desktop_box = layout.box()
+        row = desktop_box.row()
+        desktop_box.label(text="Desktop notifications")
+        row = desktop_box.row()
+        row.label(text="Custom Sound:")
+        row.prop(self, "custom_sound", text="",placeholder="cutom_sound.wav")
+        row = desktop_box.row()
+        row.label(text="Sound path:")
+        row.prop(self, "desktop_sound_path", text="")
         
-        if self.is_installed:
-            ## Desktop ##
-            desktop_box = layout.box()
-            row = desktop_box.row()
-            desktop_box.label(text="Desktop notifications")
-            row = desktop_box.row()
-            row.label(text="Custom Sound:")
-            row.prop(self, "custom_sound", text="",placeholder="cutom_sound.wav")
-            row = desktop_box.row()
-            row.label(text="Sound path:")
-            row.prop(self, "desktop_sound_path", text="")
-            
-            ## Discord ##
-            discord_box = layout.box()
-            row = discord_box.row()
-            discord_box.label(text="Discord notifications")
-            row = discord_box.row()
-            row.label(text="Discord channel webhook name:")
-            row.prop(self, "discord_webhook_name", text="")
-            row = discord_box.row()
-            row.label(text="Discord channel webhook url:")
-            row.prop(self, "discord_webhook_url", text="")
-            row = discord_box.row()
-            row.label(text="Default temporary save location:")
-            row.prop(self, "tmp_output_path", text="")
-            
-            ## Webhook ##
-            webhook_box = layout.box()
-            row = webhook_box.row()
-            webhook_box.label(text="Webhook notifications")
-            row = webhook_box.row()
-            row.label(text="Webhook url:")
-            row.prop(self, "webhook_url", text="")
+        ## Discord ##
+        discord_box = layout.box()
+        row = discord_box.row()
+        discord_box.label(text="Discord notifications")
+        row = discord_box.row()
+        row.label(text="Discord channel webhook name:")
+        row.prop(self, "discord_webhook_name", text="")
+        row = discord_box.row()
+        row.label(text="Discord channel webhook url:")
+        row.prop(self, "discord_webhook_url", text="")
+        row = discord_box.row()
+        row.label(text="Default temporary save location:")
+        row.prop(self, "tmp_output_path", text="")
+        
+        ## Webhook ##
+        webhook_box = layout.box()
+        row = webhook_box.row()
+        webhook_box.label(text="Webhook notifications")
+        row = webhook_box.row()
+        row.label(text="Webhook url:")
+        row.prop(self, "webhook_url", text="")
 
 # Update function for webhook settings
 def update_webhook_every_frame(self, context):
@@ -688,7 +589,7 @@ class RenderNotifier:
             self.animation_embed.add_field(name="Frame time", value="...", inline=True)
             self.animation_embed.add_field(name="Est. next frame", value="...", inline=True)
             self.animation_embed.add_field(name="Avarage per frame", value="...", inline=False)
-            self.animation_embed.add_field(name="Est. render job", value="...", inline=True)
+            self.animation_embed.add_field(name="Est. render job ", value="...", inline=True)
             self.animation_embed.add_field(name="Total est. time", value="...", inline=True)
             self.animation_embed.add_field(name="Total time elapsed", value="...", inline=True)
             self.animation_embed.set_footer(text="*(^◕.◕^)*")
@@ -1336,58 +1237,29 @@ class RenderNotifier:
         except Exception as e:
             print(f"⚠️ Failed to send desktop notification: {e}")
 
-notifier_instance = None  # placeholder for later
+notifier_instance = RenderNotifier()
 
+# List of classes to register
 classes = [
     RenderNotificationsProperties, 
     RenderNotificationsRenderPanel, 
-    RenderNotificationsPreferences,
-    RenderNotifications_OT_InstallDeps
+    RenderNotificationsPreferences
 ]
 
 # Register all components and event handlers
 def register():
-    global Notify, discord, aiohttp, DiscordWebhook, DiscordEmbed
-    global notifier_instance # Declare this so we can set it
-
-
-    # Try to import optional dependencies
-    try:
-        import discord
-        import aiohttp
-        from notifypy import Notify as NotifyClass
-        from discord import Webhook as DiscordWebhookClass, Embed as DiscordEmbedClass
-
-        Notify = NotifyClass
-        DiscordWebhook = DiscordWebhookClass
-        DiscordEmbed = DiscordEmbedClass
-    except ImportError:
-        Notify = None
-        discord = None
-        aiohttp = None
-        DiscordWebhook = None
-        DiscordEmbed = None
-        print("⚠️ Optional libraries missing: notify-py, discord.py, aiohttp")
-
     # Register UI and data classes
     for cls in classes:
         bpy.utils.register_class(cls)
 
     bpy.types.Scene.render_panel_props = bpy.props.PointerProperty(type=RenderNotificationsProperties)
-
-    
-    # Only register handlers if dependencies are available
-    if None not in (Notify, DiscordWebhook, aiohttp):
-        notifier_instance = RenderNotifier()
-        
-        bpy.app.handlers.render_init.append(notifier_instance.render_init)         # Called when render starts
-        bpy.app.handlers.render_post.append(notifier_instance.render_post)         # Called after each frame is rendered
-        bpy.app.handlers.render_pre.append(notifier_instance.render_pre)           # Called just before rendering starts
-        bpy.app.handlers.render_complete.append(notifier_instance.complete)        # Called when render finishes   
-        bpy.app.handlers.render_cancel.append(notifier_instance.cancel)            # Called if render is cancelled
-        bpy.app.handlers.render_write.append(notifier_instance.on_frame_render)    # Called when a frame is written to disk
-    else:
-        print("⚠️ Skipping handler registration due to missing libraries.")
+ 
+    bpy.app.handlers.render_init.append(notifier_instance.render_init)         # Called when render starts
+    bpy.app.handlers.render_post.append(notifier_instance.render_post)         # Called after each frame is rendered
+    bpy.app.handlers.render_pre.append(notifier_instance.render_pre)           # Called just before rendering starts
+    bpy.app.handlers.render_complete.append(notifier_instance.complete)        # Called when render finishes   
+    bpy.app.handlers.render_cancel.append(notifier_instance.cancel)            # Called if render is cancelled
+    bpy.app.handlers.render_write.append(notifier_instance.on_frame_render)    # Called when a frame is written to disk
         
 # Unregister all components and handlers
 def unregister():

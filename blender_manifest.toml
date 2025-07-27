@@ -1,0 +1,46 @@
+schema_version = "1.1.0"
+
+id = "render_notifications_extension"
+version = "1.1.0"
+name = "Render Notifications"
+tagline = "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled."
+maintainer = "Michael Mosako (JimmyNoStar)"
+type = "add-on"
+website = "https://github.com/JimmyNos/Render-Notifications"
+tags = ["Render", "System"]
+blender_version_min = "4.3.2"
+
+license = [
+  "SPDX:GPL-3.0-or-later",
+]
+
+platforms = ["windows-x64"]
+wheels = [
+  "./wheels/aiohappyeyeballs-2.6.1-py3-none-any.whl",
+  "./wheels/aiohttp-3.12.14-cp311-cp311-win_amd64.whl",
+  "./wheels/aiosignal-1.4.0-py3-none-any.whl",
+  "./wheels/attrs-25.3.0-py3-none-any.whl",
+  "./wheels/colorama-0.4.6-py2.py3-none-any.whl",
+  "./wheels/discord_py-2.5.2-py3-none-any.whl",
+  "./wheels/frozenlist-1.7.0-cp311-cp311-win_amd64.whl",
+  "./wheels/idna-3.10-py3-none-any.whl",
+  "./wheels/loguru-0.6.0-py3-none-any.whl",
+  "./wheels/multidict-6.6.3-cp311-cp311-win_amd64.whl",
+  "./wheels/notify_py-0.3.43-py3-none-any.whl",
+  "./wheels/propcache-0.3.2-cp311-cp311-win_amd64.whl",
+  "./wheels/typing_extensions-4.14.1-py3-none-any.whl",
+  "./wheels/win32_setctime-1.2.0-py3-none-any.whl",
+  "./wheels/yarl-1.20.1-cp311-cp311-win_amd64.whl",
+]
+
+[permissions]
+network = "Need to send notifications via webhooks and Discord."
+
+# Optional: advanced build settings.
+# https://docs.blender.org/manual/en/dev/advanced/extensions/command_line_arguments.html#command-line-args-extension-build
+[build]
+paths_exclude_pattern = [
+  "__pycache__/",
+  "/.git/",
+  "/*.zip",
+]
