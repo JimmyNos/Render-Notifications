@@ -1,12 +1,14 @@
 # 🛎️ Render Notifications – Blender Extension
-> This version is still in development
-> 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/JimmyNos/Render-Notifications)
 ![GitHub all releases](https://img.shields.io/github/downloads/JimmyNos/Render-Notifications/total)
 ![License](https://img.shields.io/github/license/JimmyNos/Render-Notifications)
 ![Repo size](https://img.shields.io/github/repo-size/JimmyNos/Render-Notifications)
 ![Last commit](https://img.shields.io/github/last-commit/JimmyNos/Render-Notifications)
 
+> ⚠️ Note: Render Notifications has been upgraded to use the Blender Extensions system, introduced in Blender 4.1+.
+> If you're want the legacy add-on version, then check out the [legacy-addon](https://github.com/JimmyNos/Render-Notifications/tree/old_addon_branch) branch.
+> [v1.0.0](https://github.com/JimmyNos/Render-Notifications/releases/tag/v1.0.0) was the final release using the legacy add-on system
+> 
 **Render Notifications** is a Blender extention that sends notifications when a render **starts**, **finishes**, or gets **cancelled** using **Discord**, **desktop notifications**, or **webhooks** for custom platforms like **Home Assistant**.
 
 Blender does not expose render progress or time directly to Python, so this add-on calculates the following after each frame:
