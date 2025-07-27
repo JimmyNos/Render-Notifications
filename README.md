@@ -54,6 +54,9 @@ Blender does not expose render progress or time directly to Python, so this add-
 
 ## 🔧 Configuration
 ### ⚙️ Setup
+
+<img alt="notify_prefrances" src="resources/images/readme/Notify_prefrences_new.png" width="250" />
+
 1. Desktop Notifications
    - Enable the custom sound option (optional).
    - Attach your `.wav` file location.
