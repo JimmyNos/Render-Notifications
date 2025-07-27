@@ -1,4 +1,6 @@
 # 🛎️ Render Notifications – Blender Add-on
+> This version is still in development
+> 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/JimmyNos/Render-Notifications)
 ![GitHub all releases](https://img.shields.io/github/downloads/JimmyNos/Render-Notifications/total)
 ![License](https://img.shields.io/github/license/JimmyNos/Render-Notifications)
