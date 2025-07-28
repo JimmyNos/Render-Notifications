@@ -1,9 +1,9 @@
-schema_version = "1.1.0"
+schema_version = "1.0.0"
 
 id = "render_notifications_extension"
 version = "1.1.0"
 name = "Render Notifications"
-tagline = "Sends webhooks, discord and desktop notifications to notify you when your render starts, finishes, or is canceled"
+tagline = "Notifies you via Discord, desktop, or webhook on render events"
 maintainer = "Michael Mosako (JimmyNoStar)"
 type = "add-on"
 website = "https://github.com/JimmyNos/Render-Notifications"
