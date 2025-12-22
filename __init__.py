@@ -476,7 +476,7 @@ class RenderNotifier:
                             try:
                                 await edit_animation(True)
                             except Exception as e:
-                                # If the embed is too large or an error is cought, try to send it without the image
+                                # If the embed is too large or an error is cought, it try to send it without the image
                                 print(f"Error occurred while embedding image in Discord webhook: {e}. This might be due to file size limitations or an invalid file path. (possiable fix: try reloading blender)")
                                 self.animation_embed.description+= "\n Render too large for preview or failed to save."
                                 await edit_animation()
@@ -567,12 +567,12 @@ class RenderNotifier:
                                        description=f"Starting render job.. <t:{int(self.render_start_countdown)}:R>", 
                                        colour=discord.Colour.blue())
         
-        self.complete_embed = DiscordEmbed(title="*Render completed :white_check_mark:*", 
+        self.complete_embed = DiscordEmbed(title="Render completed :white_check_mark:", 
                                description=f"Render job for {self.blender_data['project_name']} completed successfully!", 
                                colour=discord.Colour.light_embed(),
                                timestamp=discord.utils.utcnow())
         
-        self.cancel_embed = DiscordEmbed(title="*Render canceled :x:*", 
+        self.cancel_embed = DiscordEmbed(title="Render canceled :x:", 
                                description=f"Render job for {self.blender_data['project_name']} was canceled!", 
                                colour=discord.Colour.light_embed(),
                                timestamp=discord.utils.utcnow())
