@@ -360,13 +360,14 @@ class RenderNotifier:
     # handle discord webhook using a separate thread-safe event loop
     def send_webhook_non_blocking(self, init=False, frame=False, finished=False, canceled=False):
         try:
+            start_timer = time.time()
             print("Sending data to subprocess:", self.blender_data)
             try:
                 s = json.dumps(self.blender_data) + "\n"
-                print("Writing to subprocess...")
                 self.p.stdin.write(s)
-                print("Flushing subprocess stdin...")
+                print("Written to subprocess stdin:")
                 self.p.stdin.flush()
+                print("Flushed subprocess stdin.")
             except Exception as e:
                 print(f"Error writing to subprocess: {e}")
 
@@ -385,18 +386,22 @@ class RenderNotifier:
                 print("Response:", parsed)
             except Exception:
                 print("Error parsing JSON response: (raw)", out_line.strip())
-                
-            # Send exit command
-            #if finished or canceled:
-            #    self.p.stdin.close()
-            #    ret = self.p.wait(timeout=5)
-            #    err = self.p.stderr.read()
-            #    print("Process finished. returncode=", ret)
-            #    if err:
-            #        print("Stderr:", err.strip())
             
+            
+            try:
+                if finished or canceled:
+                    # Send exit command
+                    self.p.stdin.close()
+                    ret = self.p.wait(timeout=5)
+                    err = self.p.stderr.read()
+                    print("Process finished. returncode=", ret)
+                    if err:
+                        print("Stderr:", err.strip())
+            except Exception as e:
+                print(f"Error closing subprocess: {e}")
+            print(f"✅ Successfully ran writing subprocess in {time.time() - start_timer} seconds")
         except Exception as e:
-            print(f"⚠️ Error occurred while running writing subproccess: {e} {self.blender_data['frames_rendered']}")
+            print(f"⚠️ Error occurred while running writing subproccess: {e}")
 
     # Handle render logic
     @persistent
@@ -414,7 +419,7 @@ class RenderNotifier:
         self.tmp_output_name_frist = self.blend_filename + " first frame"
         
         self.RENDER_START_TIME = datetime.now()
-        self.render_start_countdown = time.time()
+        self.blender_data['render_start_countdown'] = self.render_start_countdown = time.time()
         
         self.total_frames = bpy.context.scene.frame_end - bpy.context.scene.frame_start + 1
         
@@ -509,9 +514,7 @@ class RenderNotifier:
         self.webhook_completion = bpy.context.scene.render_panel_props.webhook_completion
         self.webhook_cancel = bpy.context.scene.render_panel_props.webhook_cancel
         
-        
-        
-    # Handle render pre logic
+    # Handle render pre logic render_start_countdown
     @persistent
     def render_pre(self,scene,*args):
         #print("\nPre Render\n")
@@ -587,6 +590,7 @@ class RenderNotifier:
                     self.counter += 1
                     
                     # Populate render info for sending to Discord or display
+                    self.blender_data["frame"] = scene.frame_start
                     self.blender_data["RENDER_FIRST_FRAME"] = str(self.RENDER_FIRST_FRAME)[:-4]
                     self.blender_data["est_render_job"] = str(self.RENDER_FIRST_FRAME * (self.total_frames - self.counter))[:-4]
                     self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
@@ -595,9 +599,9 @@ class RenderNotifier:
                     self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
                     self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
                     
-                    if self.discord_preview and self.is_discord: # save first frame is discord preview is enabled
+                    if self.discord_preview and self.is_discord: # save first frame if discord preview is enabled
                         first_filename = self.tmp_output_name_frist + self.file_extension
-                        self.final_first_path = os.path.join(self.first_rendered_frame_path, first_filename)
+                        self.blender_data['final_first_path'] = self.final_first_path = os.path.join(self.first_rendered_frame_path, first_filename)
                     
                         
                         def delayed_first_frame_save():
@@ -610,15 +614,15 @@ class RenderNotifier:
                                     self.send_webhook_non_blocking(frame=True)
                                 except Exception as e:
                                     print(f"❌ Failed to save first frame (render_post): {e}")
-                                    self.animation_embed.description += "\nno preview could be saved"
-                                    self.no_preview = True
+                                    self.blender_data['no_preview'] = self.no_preview = True
+                                    print(f"⚠️ First frame preview not available. ({self.blender_data['no_preview']})")
+                                    self.send_webhook_non_blocking(frame=True)
                             else:
                                 print("⚠️ Render Result not available for first frame. (render_post)")
                             return None
 
-                        bpy.app.timers.register(delayed_first_frame_save, first_interval=0.2)
-                        
-                    elif self.is_discord:
+                        bpy.app.timers.register(delayed_first_frame_save, first_interval=0.2)   
+                    elif self.is_discord and not self.discord_preview:
                         try:
                             self.send_webhook_non_blocking(frame=True)
                         except Exception as e:
@@ -721,7 +725,7 @@ class RenderNotifier:
         
         # Prepare image save path
         final_filename = self.tmp_output_name + self.file_extension
-        self.final_path = os.path.join(self.tmp_output_path, final_filename)
+        self.blender_data['final_path'] = self.final_path = os.path.join(self.tmp_output_path, final_filename)
         
         # Schedule save if needed
         def delayed_save():
@@ -735,15 +739,10 @@ class RenderNotifier:
                         self.send_webhook_non_blocking(finished=True)
                 except Exception as e:
                     print(f"❌ Error saving image (complete): {e}")
-                    if self.is_animation:
-                        self.animation_embed.description += "\nno preview could be saved"
-                    else:
-                        self.still_embed.description += "\nno preview could be saved"
-                    self.no_preview = True
+                    self.blender_data['no_preview'] = self.no_preview = True
             else:
                 print("⚠️ Render Result not ready. (complete)")
             return None
-        
             
         if self.is_animation:
             # Update metadata
@@ -796,9 +795,9 @@ class RenderNotifier:
             self.job_type = "Still"
             self.blender_data["job_type"] = self.job_type
         
-        # Prepare image save path
+        # Prepare image save path 
         final_filename = self.tmp_output_name + self.file_extension
-        self.final_path = os.path.join(self.tmp_output_path, final_filename)
+        self.blender_data['final_path'] = self.final_path = os.path.join(self.tmp_output_path, final_filename)
         
         # Schedule image saving if preview is requested
         def delayed_save():
@@ -813,11 +812,7 @@ class RenderNotifier:
                         self.send_webhook_non_blocking(canceled=True)
                 except Exception as e:
                     print(f"❌ Error saving image (cancel): {e}")
-                    if self.is_animation:
-                        self.animation_embed.description += "\nno preview could be saved"
-                    else:
-                        self.still_embed.description += "\nno preview could be saved"
-                    self.no_preview = True
+                    self.blender_data['no_preview'] = self.no_preview = True
             else:
                 print("⚠️ Render Result not ready or missing (cancel).")
             return None
