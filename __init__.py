@@ -34,6 +34,7 @@ from bpy.app.handlers import persistent
 
 import sys, subprocess, os, site, platform
 import json
+import shutil
 import requests, socket
 import asyncio
 
@@ -371,21 +372,22 @@ class RenderNotifier:
             except Exception as e:
                 print(f"Error writing to subprocess: {e}")
 
-            print("Data sent to subprocess, waiting for response...")
-            # Read response
-            out_line = self.p.stdout.readline()
-            print("Response received from subprocess:", out_line)
-            print("\n\n")
-            # Check for EOF
-            if not out_line:
-                print("No response (EOF).")
-                
-            # process the response
-            try:
-                parsed = json.loads(out_line.strip())
-                print("Response:", parsed)
-            except Exception:
-                print("Error parsing JSON response: (raw)", out_line.strip())
+            print("Data sent to subprocess")
+            #print("Data sent to subprocess, waiting for response...")
+            ## Read response
+            #out_line = self.p.stdout.readline()
+            #print("Response received from subprocess:", out_line)
+            #print("\n\n")
+            ## Check for EOF
+            #if not out_line:
+            #    print("No response (EOF).")
+            #    
+            ## process the response
+            #try:
+            #    parsed = json.loads(out_line.strip())
+            #    print("Response:", parsed)
+            #except Exception:
+            #    print("Error parsing JSON response: (raw)", out_line.strip())
             
             
             try:
@@ -532,6 +534,7 @@ class RenderNotifier:
             
             if self.is_discord:
                 self.send_webhook_non_blocking(init=True)
+                #self.blender_data["discord_webhook_url"] = "cleared" # clear webhook url after init
             
             if self.is_webhook and self.webhook_start:
                 self.send_webhook()
@@ -605,17 +608,30 @@ class RenderNotifier:
                     
                         
                         def delayed_first_frame_save():
+                            # Prefer copying the file that Blender wrote to disk (most reliable).
+                            try:
+                                src = getattr(self, 'rendered_frame_path', None)
+                                print(f"Rendered frame path: {src}")
+                                if src and os.path.isfile(src):
+                                    os.makedirs(os.path.dirname(self.final_first_path), exist_ok=True)
+                                    shutil.copy2(src, self.final_first_path)
+                                    print(f"✅ First frame copied from: {src} -> {self.final_first_path}")
+                                    self.send_webhook_non_blocking(frame=True)
+                                    return None
+                            except Exception as e:
+                                print(f"⚠️ Failed to copy first frame: {e}")
+                            
                             image = bpy.data.images.get('Render Result')
                             if image and image.has_data:
                                 try:
                                     os.makedirs(os.path.dirname(self.final_first_path), exist_ok=True)
                                     image.save_render(self.final_first_path)
-                                    #print(f"✅ First frame saved to: {self.final_first_path}")
+                                    print(f"✅ First frame saved to: {self.final_first_path}")
                                     self.send_webhook_non_blocking(frame=True)
                                 except Exception as e:
                                     print(f"❌ Failed to save first frame (render_post): {e}")
-                                    self.blender_data['no_preview'] = self.no_preview = True
-                                    print(f"⚠️ First frame preview not available. ({self.blender_data['no_preview']})")
+                                    self.blender_data['no_first_preview'] = self.no_first_preview = True
+                                    print(f"⚠️ First frame preview not available. ({self.blender_data['no_first_preview']})")
                                     self.send_webhook_non_blocking(frame=True)
                             else:
                                 print("⚠️ Render Result not available for first frame. (render_post)")
@@ -696,14 +712,18 @@ class RenderNotifier:
     def on_frame_render(self,scene, *args):
         #print("\nOn Frame Render\n")
         # Check if this is the first frame of the animation
-        if self.current_frame == bpy.context.scene.frame_start:
-            None
-            # No path is saved yet since the first frame may not be written at this point
-        else:
-            # Get the file path of the rendered frame
-            # `self.rendered_frame_path` stores the absolute path of the currently rendered frame.
-            # This is useful for saving or processing the rendered frame during the render process.
+        #if self.current_frame == bpy.context.scene.frame_start:
+        #    None
+        #    # No path is saved yet since the first frame may not be written at this point
+        #else:
+        #    # Get the file path of the rendered frame
+        #    # `self.rendered_frame_path` stores the absolute path of the currently rendered frame.
+        #    # This is useful for saving or processing the rendered frame during the render process.
+        #    self.rendered_frame_path = bpy.path.abspath(scene.render.frame_path())
+        try:
             self.rendered_frame_path = bpy.path.abspath(scene.render.frame_path())
+        except Exception:
+            self.rendered_frame_path = None
     
     #handle render complete logic
     @persistent
@@ -729,6 +749,18 @@ class RenderNotifier:
         
         # Schedule save if needed
         def delayed_save():
+            try:
+                src = getattr(self, 'rendered_frame_path', None)
+                print(f"Rendered frame path: {src}")
+                if src and os.path.isfile(src):
+                    os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
+                    shutil.copy2(src, self.final_path)
+                    print(f"✅ complete frame copied from: {src} -> {self.final_path}")
+                    self.send_webhook_non_blocking(frame=True)
+                    return None
+            except Exception as e:
+                print(f"⚠️ Failed to copy first frame: {e}")
+            
             image = bpy.data.images.get('Render Result')
             if image and image.has_data:
                 try:
@@ -801,6 +833,18 @@ class RenderNotifier:
         
         # Schedule image saving if preview is requested
         def delayed_save():
+            try:
+                src = getattr(self, 'rendered_frame_path', None)
+                print(f"Rendered frame path: {src}")
+                if src and os.path.isfile(src):
+                    os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
+                    shutil.copy2(src, self.final_path)
+                    print(f"✅ canceled frame copied from: {src} -> {self.final_path}")
+                    self.send_webhook_non_blocking(frame=True)
+                    return None
+            except Exception as e:
+                print(f"⚠️ Failed to copy first frame: {e}")
+            
             image = bpy.data.images.get('Render Result')
             if image and image.has_data:
                 try:

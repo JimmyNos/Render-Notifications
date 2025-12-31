@@ -17,8 +17,16 @@ class DiscordProcessor:
         #self.render_start_countdown = time.time()
         self.discord_preview = False
         self.no_preview = False
+        self.no_first_preview = False
         self.file = None
         self.thumbfile = None
+        self.file_path = None
+        self.thumb_path = None
+        
+        self.attach = None
+        self.thumb_attach = None
+        self.first_attach = None
+        self.still_attach = None
 
     async def run(self):
         st_first = sys.stdin.readline().strip()
@@ -73,6 +81,10 @@ class DiscordProcessor:
                     self.no_preview = self.blender_data.get('no_preview')
                 except KeyError:
                     self.no_preview = False
+                try:
+                    self.no_first_preview = self.blender_data.get('no_first_preview')
+                except KeyError:
+                    self.no_first_preview = False
                 #await webhook.send(username="Blender Hook",content="test", wait=True)
                 try:
                     await self.send_or_update_embed(webhook, self.init, self.frame, self.finished, self.canceled)
@@ -198,23 +210,27 @@ class DiscordProcessor:
             #check if it's the first frame
             if self.blender_data.get("frames_rendered") == 1:
                 #print("First frame rendered")
-                if self.discord_preview and self.no_preview == False:
+                if self.discord_preview and not self.no_first_preview:
                     try:
                         if os.path.isfile(self.blender_data.get('final_first_path')):
                             #print("valid file path")
-                            self.thumbfile=discord.File(self.blender_data.get('final_first_path'),filename="first_render.png")
-                            thumbattach = "attachment://first_render.png"
-                            self.animation_embed.set_thumbnail(url=thumbattach)
-                            self.first_frame_embed.set_thumbnail(url=thumbattach)
+                            self.thumb_path = self.blender_data.get('final_first_path')
+                            #thumbattach = "attachment://first_render.png"
+                            self.first_attach = "first_render.png"
+                            #self.animation_embed.set_thumbnail(url=thumbattach)
+                            #self.first_frame_embed.set_thumbnail(url=thumbattach)
+                            self.animation_embed.set_image(url="attachment://" + self.first_attach)
+                            #self.animation_embed.set_thumbnail(url="attachment://" + self.first_attach)
+                            self.first_frame_embed.set_image(url="attachment://" + self.first_attach)
                         else:
-                            print(f"⚠️ File not found: {self.blender_data.get('final_first_path')}")
+                            #print(f"⚠️ File not found: {self.blender_data.get('final_first_path')}")
                             self.thumbfile = None
                     except Exception as e:
                         print(f"Error occurred while setting thumbnail for first frame in en_post: {e}")   
                 
                 try:
                     
-                    self.animation_embed.description += "\nFirst frame rendered" if self.no_preview == False else "\nFirst frame rendered (no preview available)"
+                    self.animation_embed.description += "\nFirst frame rendered" if not self.no_first_preview else "\nFirst frame rendered (no preview available)"
                     self.animation_embed.set_field_at(index=3,name="Frame", value=self.first_frame, inline=False)
                     self.animation_embed.set_field_at(index=4,name="frames rendered", value=self.frames_rendered_field, inline=True)
                     self.animation_embed.set_field_at(index=5,name="Frame time", value=self.blender_data.get('RENDER_FIRST_FRAME'), inline=True)
@@ -239,69 +255,71 @@ class DiscordProcessor:
     def em_complete(self,isAnimation):
         if isAnimation: 
             try:
-                if self.discord_preview and self.no_preview == False:
+                if self.discord_preview and not self.no_preview:
                     try: # try to upload the preview images
                         if os.path.isfile(self.final_path):
                             # set the image as the complete render
-                            self.file = discord.File(self.final_path, filename="complete_render.png")
-                            attach = "attachment://complete_render.png"
-                            self.animation_embed.set_image(url=attach)
+                            self.file_path = self.final_path
+                            self.attach = "complete_render.png"
+                            self.animation_embed.set_image(url=None)
+                            self.animation_embed.set_image(url="attachment://" + self.attach)
                         else:
-                            print(f"⚠️ File not found: {self.final_path}")
+                            #print(f"⚠️ File not found: {self.final_path}")
                             #self.file = None
-                            self.discord_preview = False
-                        
-                        if os.path.isfile(self.blender_data.get('final_first_path')):
-                            # set the thumbnail as the first frame
-                            self.thumbfile=discord.File(self.blender_data.get('final_first_path'),filename="first_render.png")
-                            thumbattach = "attachment://first_render.png"
-                            self.animation_embed.set_thumbnail(url=thumbattach)
-                        else:
-                            print(f"⚠️ File not found: {self.blender_data.get('final_first_path')}")
-                            #self.thumbfile = None
-                            self.discord_preview = False
+                            self.no_preview = True
+
+                        if not self.no_first_preview:
+                            if os.path.isfile(self.blender_data.get('final_first_path')):
+                                # set the thumbnail as the first frame
+                                self.thumb_path = self.blender_data.get('final_first_path')
+                                self.thumb_attach = "first_render.png"
+                                self.animation_embed.set_thumbnail(url="attachment://" + self.thumb_attach)
+                            else:
+                                #print(f"⚠️ File not found: {self.blender_data.get('final_first_path')}")
+                                #self.thumbfile = None
+                                self.no_preview = True
                     except Exception as e:
-                        print(f"An error occurred in en_com A1 when uploading images: {e}")
-                        self.discord_preview = False
+                        print(f"An error occurred in en_com A1 when uploading images: {e}.")
+                        self.no_preview = True
                         
-                self.animation_embed.description += "\nRender complete" if self.no_preview == False else "\nRender complete (no preview available)"
+                self.animation_embed.description += "\nRender complete" if not self.no_preview else "\nRender complete (no preview available)"
                 self.animation_embed.set_field_at(index=7, name="Avarage per frame", value=self.blender_data.get('average_time'), inline=True)
                 self.animation_embed.set_field_at(index=9, name="Total est. time", value=self.blender_data.get('total_Est_time'), inline=True)
                 self.animation_embed.set_field_at(index=10, name="Total time elapsed", value=self.blender_data.get('total_time_elapsed'), inline=True)
                 self.animation_embed.set_footer(text="( *︾▽︾)")
                 
-                if self.discord_preview and self.no_preview == False:
-                    try:
-                        if os.path.isfile(self.final_path):
-                            self.file = discord.File(self.final_path, filename="complete_render.png")
-                            attach = "attachment://complete_render.png"
-                            self.animation_embed.set_image(url=attach)
-                        else:
-                            print(f"⚠️ File not found: {self.final_path}")
-                            #self.file = None
-                            self.discord_preview = False
-                    except Exception as e:
-                        print(f"An error occurred in en_com A2 when uploading images: {e}")
-                        self.discord_preview = False
+                #if self.discord_preview and not self.no_preview:
+                #    try:
+                #        if os.path.isfile(self.final_path):
+                #            self.file_path = self.final_path
+                #            self.attach = "complete_render.png"
+                #            self.animation_embed.set_image(url="attachment://" + self.attach)
+                #        else:
+                #            #print(f"⚠️ File not found: {self.final_path}")
+                #            #self.file = None
+                #            self.no_preview = True
+                #    except Exception as e:
+                #        print(f"An error occurred in en_com A2 when uploading images: {e}")
+                #        self.no_preview = True
                 self.animation_embed.colour=discord.Colour.green()
             except Exception as e:
-                print(f"An error occurred in en_com A3: {e}")
+                print(f"An error occurred in en_com A2: {e}")
         # it's a still render job
         else:
             try:
-                if self.discord_preview and self.no_preview == False:
+                if self.discord_preview and not self.no_preview:
                     try: # try to upload the preview images
                         if os.path.isfile(self.final_path):
-                            self.file = discord.File(self.final_path,filename="complete_render.png")
-                            attach = "attachment://complete_render.png"
-                            self.still_embed.set_image(url=attach)
+                            self.file_path = self.final_path
+                            self.still_attach = "complete_render.png"
+                            self.still_embed.set_image(url="attachment://" + self.still_attach)
                         else:
-                            print(f"⚠️ File not found: {self.final_path}")
+                            #print(f"⚠️ File not found: {self.final_path}")
                             #self.file = None
-                            self.discord_preview = False
+                            self.no_preview = True
                     except Exception as e:
                         print(f"An error occurred in en_com S1: {e}")
-                        self.discord_preview = False
+                        self.no_preview = True
                 self.still_embed.description += "\nRender complete"
                 self.still_embed.set_field_at(index=0,name="Job type", value=self.blender_data.get('job_type'), inline=True)
                 self.still_embed.set_field_at(index=2, name="Total time elapsed", value=self.blender_data.get('total_time_elapsed'), inline=False)
@@ -315,31 +333,32 @@ class DiscordProcessor:
         if isAnimation: 
             try:
                 if "frames_rendered" in self.blender_data:
-                    if self.discord_preview and self.no_preview == False:
+                    if self.discord_preview and not self.no_preview:
                         try: # try to upload the preview images
-                            if self.blender_data.get("frames_rendered", 0) > 1:
+                            if self.blender_data.get("frames_rendered", 0) > 1 and not self.no_first_preview:
                                 if os.path.isfile(self.blender_data.get('final_first_path')):
-                                    self.thumbfile=discord.File(self.blender_data.get('final_first_path'),filename="first_render.png")
-                                    thumbattach = "attachment://first_render.png"
-                                    self.animation_embed.set_thumbnail(url=thumbattach)
+                                    self.thumb_path = self.blender_data.get('final_first_path')
+                                    self.thumb_attach = "first_render.png"
+                                    self.animation_embed.set_thumbnail(url="attachment://" + self.thumb_attach)
+                                    #self.animation_embed.set_image(url=None)
+                                    self.file_path = self.final_path
+                                    self.attach = "cencel_render.png"
+                                    self.animation_embed.set_image(url="attachment://" + self.attach)
                                 else:
-                                    print(f"⚠️ File not found: {self.blender_data.get('final_first_path')}")
-                                    #self.thumbfile = None
-                                    self.discord_preview = False
+                                    self.no_preview = True
                             else:
                                 if os.path.isfile(self.final_path):
                                     # set the image as the complete render
-                                    self.file=discord.File(self.final_path,filename="cencel_render.png")
-                                    attach = "attachment://cencel_render.png"
-                                    self.animation_embed.set_image(url=attach)
+                                    self.animation_embed.set_image(url=None)
+                                    self.file_path = self.final_path
+                                    self.attach = "cencel_render.png"
+                                    self.animation_embed.set_image(url="attachment://" + self.attach)
                                 else:
-                                    print(f"⚠️ File not found: {self.final_path}")
-                                    #self.file = None
-                                    self.discord_preview = False
+                                    self.no_preview = True
                         except Exception as e:
                             print(f"An error occurred en_cancel 1: {e}")
-                            self.discord_preview = False
-                    self.animation_embed.description += "\nCanceled" if self.no_preview == False else "\nCanceled (no preview available)"
+                            self.no_preview = True
+                    self.animation_embed.description += "\nCanceled" if not self.no_preview else "\nCanceled (no preview available)"
                     self.animation_embed.set_field_at(index=3,name="Unfinished Frame", value=self.blender_data.get('current_frame'), inline=True)
                     self.animation_embed.add_field(name="Still to render", value="("+str(self.blender_data.get('frames_still_to_render'))+"/"+str(self.blender_data.get('total_frames'))+")", inline=False)
                     self.animation_embed.add_field(name="Job Cancelled", value=self.blender_data.get('RENDER_CANCELLED_TIME'), inline=False)
@@ -347,7 +366,7 @@ class DiscordProcessor:
                     self.animation_embed.colour=discord.Colour.red()
                 else:
                     #run if canceled before frist frame starts rendering
-                    self.animation_embed.description += "\nCanceled" if self.no_preview == False else "\nCanceled (no preview available)"
+                    self.animation_embed.description += "\nCanceled" if not self.no_preview else "\nCanceled (no preview available)"
                     self.animation_embed.set_field_at(index=3,name="Frame", value=self.blender_data.get('current_frame'), inline=True)
                     self.animation_embed.add_field(name="Still to render", value="("+str(self.blender_data.get('frames_still_to_render'))+"/"+str(self.blender_data.get('total_frames'))+")", inline=False)
                     self.animation_embed.add_field(name="Job Cancelled", value=self.blender_data.get('RENDER_CANCELLED_TIME'), inline=False)
@@ -356,20 +375,20 @@ class DiscordProcessor:
             except Exception as e:
                 print(f"An error occurred in Ani en_cancel 2: {e}")  
         else: # it's a still render job
-            if self.discord_preview and self.no_preview == False:
+            if self.discord_preview and not self.no_preview:
                 try: # try to upload the preview images
                     if os.path.isfile(self.final_path):
-                        self.file=discord.File(self.final_path,filename="cencel_render.png")
-                        attach = "attachment://cencel_render.png"
-                        self.still_embed.set_image(url=attach)
+                        self.file_path = self.final_path
+                        self.still_attach = "cencel_render.png"
+                        self.still_embed.set_image(url="attachment://" + self.still_attach)
                     else:
-                        print(f"⚠️ File not found: {self.final_path}")
+                        #print(f"⚠️ File not found: {self.final_path}")
                         #self.file = None
-                        self.discord_preview = False
+                        self.no_preview = True
                 except Exception as e:
                     print(f"An error occurred in still en_cancel 3: {e}")
-                    self.discord_preview = False
-            self.still_embed.description += "\nCanceled" if self.no_preview == False else "\nCanceled (no preview available)"
+                    self.no_preview = True
+            self.still_embed.description += "\nCanceled" if not self.no_preview else "\nCanceled (no preview available)"
             self.still_embed.set_field_at(index=0,name="Job type", value=self.blender_data.get('job_type'), inline=True)
             self.still_embed.add_field(name="Job Cancelled", value=str(self.blender_data.get('RENDER_CANCELLED_TIME')), inline=False)
             self.still_embed.set_footer(text="[X_ X)")
@@ -418,41 +437,65 @@ class DiscordProcessor:
                 self.em_cancel(False)
                 
         async def edit_still(has_attch = False):
+            def _build_still_attachments():
+                attachments = []
+                if has_attch and getattr(self, 'file_path', None) and os.path.isfile(self.file_path):
+                    attachments.append(discord.File(self.file_path, filename=self.still_attach))
+                return attachments
+
             if finished:
-                if has_attch:
-                    await webhook.edit_message(self.message_id, embed=self.still_embed,attachments=[self.file])
+                attachments = _build_still_attachments()
+                if attachments:
+                    await webhook.edit_message(self.message_id, embed=self.still_embed, attachments=attachments)
                 else:
                     await webhook.edit_message(self.message_id, embed=self.still_embed)
-                    
+
                 await self.send_on_complete(full_hook, webhook)
             elif canceled:
-                if has_attch:
-                    await webhook.edit_message(self.message_id, embed=self.still_embed,attachments=[self.file])
+                attachments = _build_still_attachments()
+                if attachments:
+                    await webhook.edit_message(self.message_id, embed=self.still_embed, attachments=attachments)
                 else:
                     await webhook.edit_message(self.message_id, embed=self.still_embed)
-                    
+
                 await self.send_on_cancel(full_hook, webhook)
             else:
                 await webhook.edit_message(self.message_id, embed=self.still_embed)
         
         async def edit_animation(has_attch = False):
+            def _build_animation_attachments():
+                attachments = []
+                if has_attch and not self.no_first_preview and getattr(self, 'file_path', None) and os.path.isfile(self.file_path):
+                    attachments.append(discord.File(self.file_path, filename=self.attach))
+                    
+                if has_attch and not self.no_first_preview and getattr(self, 'thumb_path', None) and os.path.isfile(self.thumb_path):
+                    attachments.append(discord.File(self.thumb_path, filename=self.thumb_attach))
+                    
+                return attachments
+
             if finished:
-                if has_attch:
-                    await webhook.edit_message(self.message_id, embed=self.animation_embed,attachments=[self.file,self.thumbfile])
+                attachments = _build_animation_attachments()
+                if attachments:
+                    await webhook.edit_message(self.message_id, embed=self.animation_embed, attachments=attachments)
                 else:
                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
-                
+
                 await self.send_on_complete(full_hook, webhook)
             elif canceled:
-                if has_attch:
-                    await webhook.edit_message(self.message_id, embed=self.animation_embed,attachments=[self.file,self.thumbfile])
+                attachments = _build_animation_attachments()
+                if attachments:
+                    await webhook.edit_message(self.message_id, embed=self.animation_embed, attachments=attachments)
                 else:
                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
-                
+
                 await self.send_on_cancel(full_hook, webhook)
             elif self.blender_data.get("frames_rendered") == 1:
-                if has_attch:
-                    await webhook.edit_message(self.message_id, embed=self.animation_embed,attachments=[self.thumbfile])
+                # only send thumbnail for the first frame
+                attachments = []
+                if has_attch and not self.no_first_preview and getattr(self, 'thumb_path', None) and os.path.isfile(self.thumb_path):
+                    attachments.append(discord.File(self.thumb_path, filename=self.first_attach))
+                if attachments:
+                    await webhook.edit_message(self.message_id, embed=self.animation_embed, attachments=attachments)
                 else:
                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
             else:
@@ -465,7 +508,7 @@ class DiscordProcessor:
                 full_hook = await webhook.fetch()
                 if self.blender_data.get('job_type') == "Animation": 
                     # If the preview is enabled, send the embed with the preview images
-                    if self.discord_preview and self.no_preview == False:
+                    if self.discord_preview and not self.no_preview:
                         try:
                             await edit_animation(True)
                         except Exception as e:
@@ -477,7 +520,7 @@ class DiscordProcessor:
                         await edit_animation()
                 else:
                     # Send still embed if the job is not an animation
-                    if self.discord_preview and self.no_preview == False:
+                    if self.discord_preview and not self.no_preview:
                         try:
                             await edit_still(True)
                         except Exception as e:
