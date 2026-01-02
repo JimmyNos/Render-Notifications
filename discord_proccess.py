@@ -67,7 +67,7 @@ class DiscordProcessor:
                 except json.JSONDecodeError:
                     data = {"raw": line}
 
-                response = {"received": "data received", "ack": True}
+                response = {"received": f"data received. frame: {self.blender_data.get('frame')}", "ack": True}
 
                 # Allow the caller to request the child to exit
                 if isinstance(data, dict) and data.get("cmd") == "exit":
@@ -120,7 +120,7 @@ class DiscordProcessor:
             self.canceled = True
 
     async def fetch_data(self, data):
-        # Loop reading JSON-lines from stdin and reply for each line.
+        # Loop reading JSON-lines from stdin and reply for each line. isfirst_frame
         for line in sys.stdin:
             line = line.strip()
             if not line:
@@ -188,7 +188,7 @@ class DiscordProcessor:
             self.first_frame_embed.add_field(name="Total time elapsed", value="...", inline=False)
             self.first_frame_embed.set_footer(text="*(^◕.◕^)*")
             
-            # set the still embed fields with the data genarated from blender is its a the first frame of the timeline
+            # set the still embed fields with the data genarated from blender if it's the first frame of the timeline
             if self.blender_data["isfirst_frame"]:
                 self.still_embed.add_field(name="Job type", value=self.blender_data.get('job_type'), inline=True)
                 self.still_embed.add_field(name="Frame", value=self.blender_data.get('frame'), inline=True)

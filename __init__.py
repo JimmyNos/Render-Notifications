@@ -48,6 +48,7 @@ Notify = NotifyClass
 DiscordWebhook = DiscordWebhookClass
 DiscordEmbed = DiscordEmbedClass
 
+
 # Define the addon preferences class
 class RenderNotificationsPreferences(AddonPreferences):
     bl_idname = __package__
@@ -83,11 +84,11 @@ class RenderNotificationsPreferences(AddonPreferences):
         default = "C:/tmp/",
         maxlen = 1024
     )
-    
-    ## Webhook ##
-    webhook_url: StringProperty( #type: ignore
-        name="webhook url",
-        description="Webhook url to send notifications to."
+
+    ## Third-party Webhook ##
+    third_party_webhook_url: StringProperty( #type: ignore
+        name="Third-party webhook url",
+        description="Third-party webhook url to send notifications to."
     )
     
     # Drawing UI for addon preferences
@@ -119,23 +120,23 @@ class RenderNotificationsPreferences(AddonPreferences):
         row = discord_box.row()
         row.label(text="Default temporary save location:")
         row.prop(self, "tmp_output_path", text="")
-        
-        ## Webhook ##
-        webhook_box = layout.box()
-        row = webhook_box.row()
-        webhook_box.label(text="Webhook notifications")
-        row = webhook_box.row()
-        row.label(text="Webhook url:")
-        row.prop(self, "webhook_url", text="")
+
+        ## Third-party Webhook ##
+        third_party_webhook_box = layout.box()
+        row = third_party_webhook_box.row()
+        third_party_webhook_box.label(text="Third-party webhook notifications")
+        row = third_party_webhook_box.row()
+        row.label(text="Third-party webhook url:")
+        row.prop(self, "third_party_webhook_url", text="")
 
 # Update function for webhook settings
-def update_webhook_every_frame(self, context):
-    """Toggle all webhook settings when 'notify on every frame' is toggled"""
-    state = self.webhook_every_frame
-    self.webhook_start = state
-    self.webhook_first = state
-    self.webhook_completion = state
-    self.webhook_cancel = state
+def update_third_party_webhook_every_frame(self, context):
+    """Toggle all third-party webhook settings when 'notify on every frame' is toggled"""
+    state = self.third_party_webhook_every_frame
+    self.third_party_webhook_start = state
+    self.third_party_webhook_first = state
+    self.third_party_webhook_completion = state
+    self.third_party_webhook_cancel = state
 
 # Define a property group to hold the render notifications properties
 class RenderNotificationsProperties(PropertyGroup):
@@ -181,37 +182,37 @@ class RenderNotificationsProperties(PropertyGroup):
         maxlen = 1024
     )
     
-    #webhook notifications
-    webhook_every_frame: bpy.props.BoolProperty(
-        name="Webhook notify on everyframe",
-        description="Send webhook notifications on everyframe.",
+    #Third-party webhook notifications
+    third_party_webhook_every_frame: bpy.props.BoolProperty(
+        name="Third-party webhook notify on everyframe",
+        description="Send third-party webhook notifications on everyframe.",
         default=False,  # Starts unchecked
-        update=update_webhook_every_frame
+        update=update_third_party_webhook_every_frame
     ) # type: ignore
-    webhook_start: bpy.props.BoolProperty(
-        name="Webhook notify on start",
-        description="Send webhook notifications when the render job starts.",
+    third_party_webhook_start: bpy.props.BoolProperty(
+        name="Third-party webhook notify on start",
+        description="Send third-party webhook notifications when the render job starts.",
         default=False  # Starts unchecked
     ) # type: ignore
-    
-    webhook_first: bpy.props.BoolProperty(
-        name="Webhook notify on first",
-        description="Send webhook notifications when the first frame has rendered.",
+
+    third_party_webhook_first: bpy.props.BoolProperty(
+        name="Third-party webhook notify on first",
+        description="Send third-party webhook notifications when the first frame has rendered.",
         default=False  # Starts unchecked
     )# type: ignore
-    webhook_completion: bpy.props.BoolProperty(
-        name="Webhook notify on completion",
-        description="Send webhook notifications when the render job is complete.",
+    third_party_webhook_completion: bpy.props.BoolProperty(
+        name="Third-party webhook notify on completion",
+        description="Send third-party webhook notifications when the render job is complete.",
         default=False  # Starts unchecked
     )# type: ignore
-    webhook_cancel: bpy.props.BoolProperty(
-        name="Webhook notify on cancel",
-        description="Send webhook notifications when the render job is canceled.",
+    third_party_webhook_cancel: bpy.props.BoolProperty(
+        name="Third-party webhook notify on cancel",
+        description="Send third-party webhook notifications when the render job is canceled.",
         default=False  # Starts unchecked
     )# type: ignore
     
     
-    # Desktop, Discord and Webhook toggle properties
+    # Desktop, Discord and third-party Webhook toggle properties
     is_desktop: bpy.props.BoolProperty(
         name="desktop notifications",  # This will appear as the checkbox label
         description="Enable desktop notifications.",
@@ -223,10 +224,10 @@ class RenderNotificationsProperties(PropertyGroup):
         description="Enable discord notifications.",
         default=False
     )# type: ignore
-    
-    is_webhook: bpy.props.BoolProperty(
-        name="webhook notifications",  # This will appear as the checkbox label
-        description="Enable webhook notifications.",
+
+    is_third_party_webhook: bpy.props.BoolProperty(
+        name="third-party webhook notifications",  # This will appear as the checkbox label
+        description="Enable third-party third-party webhook notifications.",
         default=False
     )# type: ignore
 
@@ -257,10 +258,10 @@ class RenderNotificationsRenderPanel(Panel):
         row.prop(props, "is_discord", text="")  # Checkbox (no extra text)
         row.prop(props, "is_discord", text="Discord Notifications", emboss=False, toggle=True,icon='WORLD_DATA')  # Label with dropdown effect
         
-        webhook_box = layout.box()
-        row = webhook_box.row(align=True)
-        row.prop(props, "is_webhook", text="")  # Checkbox (no extra text)
-        row.prop(props, "is_webhook", text="Webhook Notifications", emboss=False, toggle=True,icon='WORLD_DATA')  # Label with dropdown effect
+        third_party_webhook_box = layout.box()
+        row = third_party_webhook_box.row(align=True)
+        row.prop(props, "is_third_party_webhook", text="")  # Checkbox (no extra text)
+        row.prop(props, "is_third_party_webhook", text="third-party webhook notifications", emboss=False, toggle=True,icon='WORLD_DATA')  # Label with dropdown effect
         
         # If checkbox is enabled, show additional settings for each notification type
         if props.is_desktop:
@@ -278,14 +279,14 @@ class RenderNotificationsRenderPanel(Panel):
             discord_col.prop(props, "use_custom_preview_path", text="Use custom preview path")
             discord_col.prop(props, "discord_preview_path", text="Previews save location") 
         
-        if props.is_webhook:
-            webhook_col = webhook_box.column()
-            webhook_col.label(text="Configure Notifications:")
-            webhook_col.prop(props, "webhook_every_frame", text="notify on everyframe")
-            webhook_col.prop(props, "webhook_start", text="notify on start")
-            webhook_col.prop(props, "webhook_first", text="notify on first")
-            webhook_col.prop(props, "webhook_completion", text="notify on completion")
-            webhook_col.prop(props, "webhook_cancel", text="notify on cancel")
+        if props.is_third_party_webhook:
+            third_party_webhook_col = third_party_webhook_box.column()
+            third_party_webhook_col.label(text="Configure Notifications:")
+            third_party_webhook_col.prop(props, "third_party_webhook_every_frame", text="notify on everyframe")
+            third_party_webhook_col.prop(props, "third_party_webhook_start", text="notify on start")
+            third_party_webhook_col.prop(props, "third_party_webhook_first", text="notify on first")
+            third_party_webhook_col.prop(props, "third_party_webhook_completion", text="notify on completion")
+            third_party_webhook_col.prop(props, "third_party_webhook_cancel", text="notify on cancel")
 
 
 # RenderNotifier class to handle the rendering notifications logic
@@ -317,10 +318,10 @@ class RenderNotifier:
         
         self.discord_preview = False
         self.desktop_cancel = False
-        self.webhook_cancel = False
-        self.webhook_every_frame = False
+        self.third_party_webhook_cancel = False
+        self.third_party_webhook_every_frame = False
         self.is_discord = False
-        self.is_webhook = False
+        self.is_third_party_webhook = False
         self.is_desktop = False
         self.tmp_output_path = ""
         self.final_path = ""
@@ -328,6 +329,10 @@ class RenderNotifier:
         self.final_first_path = ""
         self.tmp_output_name = ""
         self.tmp_output_name_frist = ""
+        
+        self.isfirst_frame = False
+        
+        self.is_response_received = False
         
         self.p = None
         
@@ -359,12 +364,20 @@ class RenderNotifier:
         self.tmp_output_name_frist = ""
 
     # handle discord webhook using a separate thread-safe event loop
-    def send_webhook_non_blocking(self, init=False, frame=False, finished=False, canceled=False):
+    def send_webhook_non_blocking(self, init=False, frame=False,isfirstframe=False, finished=False, canceled=False,blender_data=None):
+        is_too_fast = False
+        if not init:
+            is_too_fast = int(self.current_frame_time) < 2
+            print(f"\nis too fast? {is_too_fast} ({self.current_frame_time})\n")
+        #if self.is_response_received or init or isfirstframe or not is_too_fast:
         try:
+            if blender_data is None:
+                blender_data = self.blender_data
+
             start_timer = time.time()
-            print("Sending data to subprocess:", self.blender_data)
+            print("Sending data to subprocess:", blender_data)
             try:
-                s = json.dumps(self.blender_data) + "\n"
+                s = json.dumps(blender_data) + "\n"
                 self.p.stdin.write(s)
                 print("Written to subprocess stdin:")
                 self.p.stdin.flush()
@@ -372,29 +385,30 @@ class RenderNotifier:
             except Exception as e:
                 print(f"Error writing to subprocess: {e}")
 
-            print("Data sent to subprocess")
-            #print("Data sent to subprocess, waiting for response...")
-            ## Read response
-            #out_line = self.p.stdout.readline()
-            #print("Response received from subprocess:", out_line)
-            #print("\n\n")
-            ## Check for EOF
-            #if not out_line:
-            #    print("No response (EOF).")
-            #    
-            ## process the response
-            #try:
-            #    parsed = json.loads(out_line.strip())
-            #    print("Response:", parsed)
-            #except Exception:
-            #    print("Error parsing JSON response: (raw)", out_line.strip())
-            
-            
+            #self.is_response_received = False
+            #print(f"Data sent to subprocess: is first? {isfirstframe}")
+            #if isfirstframe and blender_data.get("frames_rendered") == 1:
+            print("Data sent to subprocess, waiting for response...")
+            # Read response
+            out_line = self.p.stdout.readline()
+            print("Response received from subprocess:", out_line)
+            print("\n\n")
+            # Check for EOF
+            if not out_line:
+                print("No response (EOF).")
+            # process the response
+            try:
+                parsed = json.loads(out_line.strip())
+                #self.is_response_received = True
+                print("Response:", parsed)
+            except Exception:
+                print("Error parsing JSON response: (raw)", out_line.strip())
+
             try:
                 if finished or canceled:
                     # Send exit command
                     self.p.stdin.close()
-                    ret = self.p.wait(timeout=5)
+                    ret = self.p.wait(timeout=0.1)
                     err = self.p.stderr.read()
                     print("Process finished. returncode=", ret)
                     if err:
@@ -473,7 +487,7 @@ class RenderNotifier:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                bufsize=1,
+                bufsize=1
             )
             
             #print("Process started.")
@@ -508,36 +522,38 @@ class RenderNotifier:
             #    print("Stderr:", err.strip())
         
         ## Webhook ##
-        self.webhook_url = bpy.context.preferences.addons[addon_name].preferences.webhook_url
-        self.is_webhook = bpy.context.scene.render_panel_props.is_webhook
-        self.webhook_every_frame = bpy.context.scene.render_panel_props.webhook_every_frame
-        self.webhook_start = bpy.context.scene.render_panel_props.webhook_start
-        self.webhook_first = bpy.context.scene.render_panel_props.webhook_first
-        self.webhook_completion = bpy.context.scene.render_panel_props.webhook_completion
-        self.webhook_cancel = bpy.context.scene.render_panel_props.webhook_cancel
-        
+        self.third_party_webhook_url = bpy.context.preferences.addons[addon_name].preferences.third_party_webhook_url
+        self.is_third_party_webhook = bpy.context.scene.render_panel_props.is_third_party_webhook
+        self.third_party_webhook_every_frame = bpy.context.scene.render_panel_props.third_party_webhook_every_frame
+        self.third_party_webhook_start = bpy.context.scene.render_panel_props.third_party_webhook_start
+        self.third_party_webhook_first = bpy.context.scene.render_panel_props.third_party_webhook_first
+        self.third_party_webhook_completion = bpy.context.scene.render_panel_props.third_party_webhook_completion
+        self.third_party_webhook_cancel = bpy.context.scene.render_panel_props.third_party_webhook_cancel
+
     # Handle render pre logic render_start_countdown
     @persistent
     def render_pre(self,scene,*args):
         #print("\nPre Render\n")
         self.current_frame = bpy.context.scene.frame_current
-        self.blender_data["frame"] = bpy.context.scene.frame_current
-        self.blender_data["isfirst_frame"] = self.isfirst_frame = self.current_frame == bpy.context.scene.frame_start
+        #self.blender_data["frame"] = bpy.context.scene.frame_current
+        self.blender_data["isfirst_frame"] = self.current_frame == bpy.context.scene.frame_start
+        self.isfirst_frame = self.current_frame == bpy.context.scene.frame_start
         # check if the render job is an animation or a still image 
         if self.current_frame == bpy.context.scene.frame_start:
             self.is_animation = True
             self.job_type = "Animation"  
             self.blender_data["job_type"] = self.job_type
-            self.blender_data["frame"] = self.current_frame
+            self.blender_data["frame"] = bpy.context.scene.frame_current
             self.blender_data["frame_range"] = f"{bpy.context.scene.frame_start} - {bpy.context.scene.frame_end}"
             self.blender_data["Total_frames_to_render"] = self.total_frames
+            print(f"Current frame: {self.current_frame} {self.blender_data['frame']} {bpy.context.scene.frame_current}")    
             
             if self.is_discord:
-                self.send_webhook_non_blocking(init=True)
+                self.send_webhook_non_blocking(init=True,blender_data=self.blender_data)
                 #self.blender_data["discord_webhook_url"] = "cleared" # clear webhook url after init
-            
-            if self.is_webhook and self.webhook_start:
-                self.send_webhook()
+
+            if self.is_third_party_webhook and self.third_party_webhook_start:
+                self.send_third_party_webhook()
               
             if self.is_desktop and self.desktop_start:
                 self.notifi_desktop(
@@ -550,12 +566,12 @@ class RenderNotifier:
             #is_animation = False
             self.job_type = "Still"
             self.blender_data["job_type"] = self.job_type
-            self.blender_data["frame"] = self.current_frame
+            self.blender_data["frame"] = bpy.context.scene.frame_current
             if self.is_discord:
-                self.send_webhook_non_blocking(init=True)
+                self.send_webhook_non_blocking(init=True,blender_data=self.blender_data)
             
-            if self.is_webhook and self.webhook_start:
-                self.send_webhook()
+            if self.is_third_party_webhook and self.third_party_webhook_start:
+                self.send_third_party_webhook()
                 
             if self.is_desktop and self.desktop_start:
                 self.notifi_desktop(
@@ -572,18 +588,23 @@ class RenderNotifier:
         # Track call type for logging or webhook purposes
         self.blender_data["call_type"] = "render_post"
         self.current_frame = scene.frame_current
-        first_frame = False
+        current_frame = scene.frame_current
+        is_first_frame = self.current_frame == scene.frame_start
         
         try:
             if self.is_animation:
                 # Check if this is the first frame of the animation
-                first_frame = self.current_frame == scene.frame_start
+                #is_first_frame = self.current_frame == scene.frame_start
+                #current_frame = scene.frame_start
+                print(f"Animation render - Current frame: {self.current_frame} {current_frame}, First frame: {is_first_frame}")
                 
-                if first_frame:
+                if is_first_frame:
+                    print("First frame rendered.")
                     self.RENDER_FIRST_FRAME = datetime.now() - self.RENDER_START_TIME
                     
                     # Estimate average time per frame and total job duration
                     self.precountdown = time.time() - self.render_start_countdown
+                    self.current_frame_time = self.precountdown
                     self.countdown = int(time.time() + self.precountdown * (self.total_frames - self.counter))
                     self.current_countdown = int(time.time() + self.precountdown)
                     self.precountdown = time.time()
@@ -593,7 +614,7 @@ class RenderNotifier:
                     self.counter += 1
                     
                     # Populate render info for sending to Discord or display
-                    self.blender_data["frame"] = scene.frame_start
+                    self.blender_data["frame"] = current_frame
                     self.blender_data["RENDER_FIRST_FRAME"] = str(self.RENDER_FIRST_FRAME)[:-4]
                     self.blender_data["est_render_job"] = str(self.RENDER_FIRST_FRAME * (self.total_frames - self.counter))[:-4]
                     self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
@@ -609,6 +630,8 @@ class RenderNotifier:
                         
                         def delayed_first_frame_save():
                             # Prefer copying the file that Blender wrote to disk (most reliable).
+                            self.blender_data["frame"] = current_frame
+                            self.blender_data["isfirst_frame"] = True
                             try:
                                 src = getattr(self, 'rendered_frame_path', None)
                                 print(f"Rendered frame path: {src}")
@@ -616,7 +639,7 @@ class RenderNotifier:
                                     os.makedirs(os.path.dirname(self.final_first_path), exist_ok=True)
                                     shutil.copy2(src, self.final_first_path)
                                     print(f"✅ First frame copied from: {src} -> {self.final_first_path}")
-                                    self.send_webhook_non_blocking(frame=True)
+                                    self.send_webhook_non_blocking(frame=True,isfirstframe=True,blender_data=self.blender_data)
                                     return None
                             except Exception as e:
                                 print(f"⚠️ Failed to copy first frame: {e}")
@@ -627,12 +650,12 @@ class RenderNotifier:
                                     os.makedirs(os.path.dirname(self.final_first_path), exist_ok=True)
                                     image.save_render(self.final_first_path)
                                     print(f"✅ First frame saved to: {self.final_first_path}")
-                                    self.send_webhook_non_blocking(frame=True)
+                                    self.send_webhook_non_blocking(frame=True,isfirstframe=True,blender_data=self.blender_data)
                                 except Exception as e:
                                     print(f"❌ Failed to save first frame (render_post): {e}")
                                     self.blender_data['no_first_preview'] = self.no_first_preview = True
                                     print(f"⚠️ First frame preview not available. ({self.blender_data['no_first_preview']})")
-                                    self.send_webhook_non_blocking(frame=True)
+                                    self.send_webhook_non_blocking(frame=True,isfirstframe=True,blender_data=self.blender_data)
                             else:
                                 print("⚠️ Render Result not available for first frame. (render_post)")
                             return None
@@ -640,9 +663,10 @@ class RenderNotifier:
                         bpy.app.timers.register(delayed_first_frame_save, first_interval=0.2)   
                     elif self.is_discord and not self.discord_preview:
                         try:
-                            self.send_webhook_non_blocking(frame=True)
+                            self.send_webhook_non_blocking(frame=True,isfirstframe=True,blender_data=self.blender_data)
                         except Exception as e:
                             print(f"error in re_post when sending first frame discord: {e}")
+                # if not the first frame
                 else:
                     try:
                         # Time per frame and ETA calculations
@@ -662,7 +686,7 @@ class RenderNotifier:
                             self.blender_data["est_render_job"] = str(self.RENDER_CURRENT_FRAME * (self.total_frames - self.counter + 1))[:-4]
                             
                         # Update per-frame render data
-                        self.blender_data["frame"] = scene.frame_current
+                        self.blender_data["frame"] = current_frame
                         self.blender_data["RENDER_CURRENT_FRAME"] = str(self.RENDER_CURRENT_FRAME)[:-4]
                         self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
                         self.blender_data["frames_rendered"] = self.counter
@@ -672,7 +696,7 @@ class RenderNotifier:
                         
                         if self.is_discord:
                             try:
-                                self.send_webhook_non_blocking(frame=True)
+                                self.send_webhook_non_blocking(frame=True,blender_data=self.blender_data)
                             except Exception as e:
                                 print(f"error in re_post when sending discord: {e}")
 
@@ -692,12 +716,12 @@ class RenderNotifier:
                 self.average_time = avg
                 self.blender_data["average_time"] = str(self.average_time)[:-4]
                 
-                if self.is_webhook and first_frame and self.webhook_first:
-                    self.send_webhook()
-                elif self.webhook_every_frame:
-                    self.send_webhook()
+                if self.is_third_party_webhook and is_first_frame and self.third_party_webhook_first:
+                    self.send_third_party_webhook()
+                elif self.third_party_webhook_every_frame:
+                    self.send_third_party_webhook()
                 
-                if self.is_desktop and first_frame and self.desktop_first:
+                if self.is_desktop and is_first_frame and self.desktop_first:
                     self.notifi_desktop(
                         title="First frame rendered", 
                         message=f"First frame rendered for: {self.blender_data['project_name']} \ntime: {self.blender_data['RENDER_FIRST_FRAME']} \nEst. render job: {self.blender_data['est_render_job']}"
@@ -756,7 +780,7 @@ class RenderNotifier:
                     os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
                     shutil.copy2(src, self.final_path)
                     print(f"✅ complete frame copied from: {src} -> {self.final_path}")
-                    self.send_webhook_non_blocking(frame=True)
+                    self.send_webhook_non_blocking(finished=True,blender_data=self.blender_data)
                     return None
             except Exception as e:
                 print(f"⚠️ Failed to copy first frame: {e}")
@@ -768,7 +792,7 @@ class RenderNotifier:
                     image.save_render(self.final_path)
                     #print(f"✅ Saved image to: {self.final_path}")
                     if self.is_discord:
-                        self.send_webhook_non_blocking(finished=True)
+                        self.send_webhook_non_blocking(finished=True,blender_data=self.blender_data)
                 except Exception as e:
                     print(f"❌ Error saving image (complete): {e}")
                     self.blender_data['no_preview'] = self.no_preview = True
@@ -785,10 +809,10 @@ class RenderNotifier:
             bpy.app.timers.register(delayed_save, first_interval=0.2)
         else:
             if self.is_discord:
-                self.send_webhook_non_blocking(finished=True)
+                self.send_webhook_non_blocking(finished=True,blender_data=self.blender_data)
         
-        if self.is_webhook and self.webhook_completion:
-            self.send_webhook()
+        if self.is_third_party_webhook and self.third_party_webhook_completion:
+            self.send_third_party_webhook()
             
         if self.is_desktop and self.desktop_completion:
             self.notifi_desktop(
@@ -840,7 +864,7 @@ class RenderNotifier:
                     os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
                     shutil.copy2(src, self.final_path)
                     print(f"✅ canceled frame copied from: {src} -> {self.final_path}")
-                    self.send_webhook_non_blocking(frame=True)
+                    self.send_webhook_non_blocking(canceled=True,blender_data=self.blender_data)
                     return None
             except Exception as e:
                 print(f"⚠️ Failed to copy first frame: {e}")
@@ -853,7 +877,7 @@ class RenderNotifier:
                     #print(f"✅ Saved image to: {self.final_path}")
                     
                     if self.is_discord:
-                        self.send_webhook_non_blocking(canceled=True)
+                        self.send_webhook_non_blocking(canceled=True,blender_data=self.blender_data)
                 except Exception as e:
                     print(f"❌ Error saving image (cancel): {e}")
                     self.blender_data['no_preview'] = self.no_preview = True
@@ -871,10 +895,10 @@ class RenderNotifier:
         if self.discord_preview and self.is_discord:
             bpy.app.timers.register(delayed_save, first_interval=0.2)
         elif self.is_discord:
-            self.send_webhook_non_blocking(canceled=True)
+            self.send_webhook_non_blocking(canceled=True,blender_data=self.blender_data)
             
-        if self.is_webhook and self.webhook_cancel:
-            self.send_webhook()
+        if self.is_third_party_webhook and self.third_party_webhook_cancel:
+            self.send_third_party_webhook()
             
         if self.is_desktop and self.desktop_cancel:
             self.notifi_desktop(
@@ -882,10 +906,10 @@ class RenderNotifier:
                 message=f"Render job canceled for: {self.blender_data['project_name']} \nRender canceled after: {self.RENDER_CANCELLED_TIME}"
                 )
 
-    # Send JSON payload via webhook to a server (e.g., Flask, Home Assistant, etc.)
+    # Send JSON payload via third-party webhook to a server (e.g., Flask, Home Assistant, etc.)
     @persistent
-    def send_webhook(self):
-        # Use the preconfigured self.webhook_url
+    def send_third_party_webhook(self):
+        # Use the preconfigured self.third_party_webhook_url
         payload = self.blender_data
         import logging
 
@@ -895,22 +919,22 @@ class RenderNotifier:
 
         try:
             try:
-                response = requests.post(self.webhook_url, json=payload, timeout=10)
+                response = requests.post(self.third_party_webhook_url, json=payload, timeout=10)
                 response.raise_for_status()
             except requests.exceptions.Timeout:
-                logger.error("Webhook request timed out.")
+                logger.error("Third-party webhook request timed out.")
             except requests.exceptions.ConnectionError:
-                logger.error("Failed to connect to the webhook URL.")
+                logger.error("Failed to connect to the third-party webhook URL.")
             except requests.exceptions.RequestException as e:
-                logger.error(f"An error occurred while sending the webhook: {e}")
+                logger.error(f"An error occurred while sending the third-party webhook: {e}")
             
             if response.status_code == 200:
-                logger.info('Webhook sent successfully!')
+                logger.info('Third-party webhook sent successfully!')
             else:
-                logger.error(f'Failed to send webhook. Status code: {response.status_code}')
+                logger.error(f'Failed to send third-party webhook. Status code: {response.status_code}')
                 logger.error(response.text)
         except Exception as e:
-            logger.exception("Exception while sending webhook.")
+            logger.exception("Exception while sending third-party webhook.")
     
     @persistent
     def notifi_desktop(self, title, message):
