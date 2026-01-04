@@ -37,6 +37,7 @@ import json
 import shutil
 import requests, socket
 import asyncio
+import math
 
 from datetime import datetime
 
@@ -330,6 +331,11 @@ class RenderNotifier:
         self.tmp_output_name = ""
         self.tmp_output_name_frist = ""
         
+        self.is_less_than = False
+        self.is_skip_frame = False
+        self.skip_frame = 0
+        self.skip_frame_counter = 0
+        
         self.isfirst_frame = False
         
         self.is_response_received = False
@@ -365,11 +371,45 @@ class RenderNotifier:
 
     # handle discord webhook using a separate thread-safe event loop
     def send_webhook_non_blocking(self, init=False, frame=False,isfirstframe=False, finished=False, canceled=False,blender_data=None):
-        is_too_fast = False
-        if not init:
-            is_too_fast = int(self.current_frame_time) < 2
-            print(f"\nis too fast? {is_too_fast} ({self.current_frame_time})\n")
-        #if self.is_response_received or init or isfirstframe or not is_too_fast:
+        current_frame_time = getattr(self, 'current_frame_time', 0.0)
+        current_frame = self.current_frame
+        is_last_frame = current_frame == self.total_frames
+        # Dynamic frame skipping logic to avoid filling up STDIN buffer
+        if not init and not isfirstframe and not finished and not canceled and not is_last_frame:  
+            if current_frame_time <= 1.0: # if frame time is less than 1 second
+                self.is_less_than = True
+            else:
+                self.is_less_than = False
+            
+            # Adjust skip frame settings based on current frame time
+            if self.is_less_than and not self.is_skip_frame: # if frame time is less than 1 second and not already skipping frames
+                self.is_skip_frame = True
+                self.skip_frame = math.ceil(1.0 / current_frame_time) # calculate how many frames to skip (rounding up)
+                print(f"Will skip {self.skip_frame} frames to avoid filling up STDIN buffer. frame time: {current_frame_time}")
+            elif self.is_less_than and self.is_skip_frame:
+                print(f"Skipping frame {current_frame} to avoid filling up STDIN buffer. frame time: {current_frame_time}")
+                #return
+            else:
+                self.is_skip_frame = False
+                self.skip_frame = 0
+                self.skip_frame_counter = 0
+                print("Not skiiping frames anymore. frame time:", current_frame_time)
+            
+            # Skip frame logic
+            if self.skip_frame_counter < self.skip_frame:
+                self.skip_frame_counter += 1
+                print(f"Skipping frame {current_frame} ({self.skip_frame_counter}/{self.skip_frame})")
+                return
+            elif self.skip_frame_counter == self.skip_frame and self.is_skip_frame:
+                print(f"stop skiiping frames: frame {current_frame} ({self.skip_frame_counter}/{self.skip_frame})")
+                self.skip_frame_counter = 0
+                self.is_skip_frame = False
+                #return
+                # proceed to send data
+            #elif self.skip_frame_counter > self.skip_frame:
+            #    #self.skip_frame_counter = 0
+            #    print("Not skiiping frames anymore")
+            
         try:
             if blender_data is None:
                 blender_data = self.blender_data
@@ -385,24 +425,21 @@ class RenderNotifier:
             except Exception as e:
                 print(f"Error writing to subprocess: {e}")
 
-            #self.is_response_received = False
-            #print(f"Data sent to subprocess: is first? {isfirstframe}")
-            #if isfirstframe and blender_data.get("frames_rendered") == 1:
             print("Data sent to subprocess, waiting for response...")
             # Read response
-            out_line = self.p.stdout.readline()
-            print("Response received from subprocess:", out_line)
-            print("\n\n")
-            # Check for EOF
-            if not out_line:
-                print("No response (EOF).")
-            # process the response
-            try:
-                parsed = json.loads(out_line.strip())
-                #self.is_response_received = True
-                print("Response:", parsed)
-            except Exception:
-                print("Error parsing JSON response: (raw)", out_line.strip())
+            #out_line = self.p.stdout.readline()
+            #print("Response received from subprocess:", out_line)
+            #print("\n\n")
+            ## Check for EOF
+            #if not out_line:
+            #    print("No response (EOF).")
+            ## process the response
+            #try:
+            #    parsed = json.loads(out_line.strip())
+            #    #self.is_response_received = True
+            #    print("Response:", parsed)
+            #except Exception:
+            #    print("Error parsing JSON response: (raw)", out_line.strip())
 
             try:
                 if finished or canceled:
@@ -484,7 +521,7 @@ class RenderNotifier:
             self.p = subprocess.Popen(
                 [sys.executable, "-u", discord_proccess],
                 stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1
@@ -671,6 +708,7 @@ class RenderNotifier:
                     try:
                         # Time per frame and ETA calculations
                         self.precountdown = time.time() - self.precountdown
+                        self.current_frame_time = self.precountdown
                         self.countdown = int(time.time() + self.precountdown * (self.total_frames - self.counter))
                         self.current_countdown = int(time.time() + self.precountdown)
                         self.counter += 1
@@ -706,7 +744,7 @@ class RenderNotifier:
                         
                 
                 
-                # Calculate running average frame render time
+                # Calculate running average frame render time 
                 avg = datetime.now() - datetime.now()
                 for est in self.average_est_frames:
                     avg += est
