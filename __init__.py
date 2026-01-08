@@ -35,14 +35,12 @@ from bpy.app.handlers import persistent
 import sys, subprocess, os, site, platform
 import json
 import shutil
-import requests, socket
-import asyncio
+import requests
 import math
 
 from datetime import datetime
 
 import discord
-import aiohttp
 from notifypy import Notify as NotifyClass
 from discord import Webhook as DiscordWebhookClass, Embed as DiscordEmbedClass
 Notify = NotifyClass
@@ -342,9 +340,9 @@ class RenderNotifier:
         
         self.p = None
         
-        self.still_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
-        self.first_frame_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
-        self.animation_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
+        #self.still_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
+        #self.first_frame_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
+        #self.animation_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
     
     # reset variables on render initialization
     # this is called when the render job starts
