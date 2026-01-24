@@ -43,6 +43,6 @@ paths_exclude_pattern = [
   "__pycache__/",
   "/.git/",
   "/*.zip",
-  "resources/images/readme/",
-  "Templates/homeassistant/"
+  "resources/",
+  "Templates/"
 ]
