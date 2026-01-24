@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "render_notifications_extension"
-version = "1.1.0"
+version = "1.2.0"
 name = "Render Notifications"
 tagline = "Notifies you via Discord, desktop, or webhook on render events"
 maintainer = "Michael Mosako (JimmyNoStar)"
@@ -43,6 +43,6 @@ paths_exclude_pattern = [
   "__pycache__/",
   "/.git/",
   "/*.zip",
-  "resources/images/readme/",
-  "Templates/homeassistant/"
+  "resources/images/readme",
+  "Templates/"
 ]
