@@ -42,7 +42,7 @@ Blender does not expose render progress or time directly to Python, so this add-
     - For animation jobs: shows the first and last frame
 > ⚠️ **Note**: Previews rely on saving as `.png`. Formats like `.exr` are not supported for preview extraction.
 
-### 🌐 Webhook Support
+### 🌐 Third-party Webhook Support
 - Sends structured **JSON payloads** to your custom apps or third-party services (e.g. Home Assistant).
 - Perfect for integrations with mobile alerts, dashboards, or automation workflows.
 
@@ -67,8 +67,9 @@ Blender does not expose render progress or time directly to Python, so this add-
    - You can define a **custom render preview save path**:
      - In either the **Preferences** or **Render Properties** tab.
      - If the path in Render Properties is invalid, the Preferences path will be used instead.
-3. Webhook Notifications
-   - Paste your **custom webhook URL** (e.g. for Home Assistant).
+       - don't comfuse with the **third-party** url feild. they are not the same
+3. Third-party Webhook Notifications
+   - Paste your **custom third-party webhook URL** (e.g. for Home Assistant).
 4. Render Properties Panel
    - You’ll find a new **Notifications** section.
    - Choose your notification options:
@@ -111,7 +112,7 @@ Blender does not expose render progress or time directly to Python, so this add-
 <img alt="discord_animation_cencelled.png" src="resources/images/readme/discord_animation_cencelled.png" width="300" /><img alt="discord_still_cencelled" src="resources/images/readme/discord_still_cencelled.png" width="400" />
 
 
-### 🌐 Webhook Integration (e.g. Home Assistant)
+### 🌐 Third-party Webhook Integration (e.g. Home Assistant)
 
 > Examples of mobile notifications sent via homeassistant.
 > Homeassisstant automation yaml files can be found in the tmepletes folder. Replace `your_device_id_here` with your actual **mobile device id**. Which to ui mode in automations and you should be able to search and select you device.
