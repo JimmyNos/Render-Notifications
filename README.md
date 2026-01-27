@@ -17,6 +17,8 @@ Blender does not expose render progress or time directly to Python, so this add-
 - Estimated total render time
 - Frames remaining and percentage complete
 
+> You can get this addon on the [blender extentions website](https://extensions.blender.org/add-ons/render-notifications-extension/)
+
 ---
 
 ## ✨ Features
