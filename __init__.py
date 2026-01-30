@@ -47,6 +47,8 @@ Notify = NotifyClass
 DiscordWebhook = DiscordWebhookClass
 DiscordEmbed = DiscordEmbedClass
 
+import asyncio
+import aiohttp
 
 # Define the addon preferences class
 class RenderNotificationsPreferences(AddonPreferences):
@@ -391,7 +393,7 @@ class RenderNotifier:
                 self.is_skip_frame = False
                 self.skip_frame = 0
                 self.skip_frame_counter = 0
-                print("Not skiiping frames anymore. frame time:", current_frame_time)
+                print("Not skipping frames anymore. frame time:", current_frame_time)
             
             # Skip frame logic
             if self.skip_frame_counter < self.skip_frame:
@@ -406,7 +408,7 @@ class RenderNotifier:
                 # proceed to send data
             #elif self.skip_frame_counter > self.skip_frame:
             #    #self.skip_frame_counter = 0
-            #    print("Not skiiping frames anymore")
+            #    print("Not skipping frames anymore")
             
         try:
             if blender_data is None:
@@ -416,14 +418,42 @@ class RenderNotifier:
             print("Sending data to subprocess:", blender_data)
             try:
                 s = json.dumps(blender_data) + "\n"
-                self.p.stdin.write(s)
-                print("Written to subprocess stdin:")
-                self.p.stdin.flush()
-                print("Flushed subprocess stdin.")
-            except Exception as e:
-                print(f"Error writing to subprocess: {e}")
+                # Ensure subprocess exists and stdin is writable before writing
+                if not self.p:
+                    print("⚠️ Subprocess handle is None. Skipping write.")
+                elif self.p.poll() is not None:
+                    print(f"⚠️ Subprocess has exited (returncode={self.p.returncode}). Skipping write.")
+                elif not hasattr(self.p, "stdin") or self.p.stdin is None or self.p.stdin.closed:
+                    print("⚠️ Subprocess stdin is closed or unavailable. Skipping write.")
+                else:
+                    try:
+                        self.p.stdin.write(s)
+                        self.p.stdin.flush()
+                        print("Written to subprocess stdin:")
+                        print("Flushed subprocess stdin.")
+                    except BrokenPipeError as e:
+                        print(f"BrokenPipeError writing to subprocess: {e} (errno={getattr(e,'errno',None)})")
+                        try:
+                            err = self.p.stderr.read()
+                            if err:
+                                print("Subprocess stderr:", err.strip())
+                        except Exception as re:
+                            print(f"Error reading subprocess stderr after BrokenPipeError: {re}")
+                    except OSError as e:
+                        print(f"OSError writing to subprocess: {e} (errno={getattr(e,'errno',None)})")
+                        try:
+                            err = self.p.stderr.read()
+                            if err:
+                                print("Subprocess stderr:", err.strip())
+                        except Exception as re:
+                            print(f"Error reading subprocess stderr after OSError: {re}")
+                    except Exception as e:
+                        print(f"Unexpected error writing to subprocess: {type(e).__name__}: {e}")
 
-            print("Data sent to subprocess, waiting for response...")
+            except Exception as e:
+                print(f"⚠️ Error occurred while preparing data to write to subprocess: {e}")
+
+            #print("Data sent to subprocess, waiting for response...")
             # Read response
             #out_line = self.p.stdout.readline()
             #print("Response received from subprocess:", out_line)
@@ -514,47 +544,24 @@ class RenderNotifier:
             self.blender_data["first_rendered_frame_path"] = self.first_rendered_frame_path
             # Use sys.executable and the addon path to ensure we run the project's sub.py
             addon_dir = os.path.dirname(__file__)
-            discord_proccess = os.path.join(addon_dir, "discord_proccess.py")
+            discord_process = os.path.join(addon_dir, "discord_process.py")
+            #print("Addon directory:", discord_process)
+            
+            # Parent process environment variables
+            parent_env = os.environ.copy()
+            # Add the parent's sys.path to the PYTHONPATH environment variable
+            parent_env['PYTHONPATH'] = os.pathsep.join(sys.path)
+            
             # Use -u for unbuffered output so we can stream
             self.p = subprocess.Popen(
-                [sys.executable, "-u", discord_proccess],
+                [sys.executable, "-u", discord_process],
+                env=parent_env,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1
             )
-            
-            #print("Process started.")
-            #
-            #print("Writing to subprocess...")
-            #print("Sending data to subprocess:", self.blender_data)
-            #s = json.dumps(self.blender_data) + "\n"
-            #self.p.stdin.write(s)
-            #self.p.stdin.flush()
-
-            #print("Data sent to subprocess, waiting for response...")
-            ## Read response
-            #out_line = self.p.stdout.readline()
-            #print("Response received from subprocess:", out_line)
-            ## Check for EOF
-            #if not out_line:
-            #    print("No response (EOF).")
-            #    
-            ## process the response
-            #try:
-            #    parsed = json.loads(out_line.strip())
-            #    print("Response:", parsed)
-            #except Exception:
-            #    print("Error parsing JSON response: (raw)", out_line.strip())
-            #    discord_preview
-            ## Send exit command
-            #self.p.stdin.close()
-            #ret = self.p.wait(timeout=5)
-            #err = self.p.stderr.read()
-            #print("Process finished. returncode=", ret)
-            #if err:
-            #    print("Stderr:", err.strip())
         
         ## Webhook ##
         self.third_party_webhook_url = bpy.context.preferences.addons[addon_name].preferences.third_party_webhook_url
@@ -591,7 +598,7 @@ class RenderNotifier:
                 self.send_third_party_webhook()
               
             if self.is_desktop and self.desktop_start:
-                self.notifi_desktop(
+                self.notify_desktop(
                     title="Render started", 
                     message="Render job started for: " + self.blender_data["project_name"]
                     )
@@ -609,7 +616,7 @@ class RenderNotifier:
                 self.send_third_party_webhook()
                 
             if self.is_desktop and self.desktop_start:
-                self.notifi_desktop(
+                self.notify_desktop(
                     title="Render started", 
                     message="Render job started for: " + self.blender_data["project_name"]
                     )
@@ -758,7 +765,7 @@ class RenderNotifier:
                     self.send_third_party_webhook()
                 
                 if self.is_desktop and is_first_frame and self.desktop_first:
-                    self.notifi_desktop(
+                    self.notify_desktop(
                         title="First frame rendered", 
                         message=f"First frame rendered for: {self.blender_data['project_name']} \ntime: {self.blender_data['RENDER_FIRST_FRAME']} \nEst. render job: {self.blender_data['est_render_job']}"
                         )
@@ -851,7 +858,7 @@ class RenderNotifier:
             self.send_third_party_webhook()
             
         if self.is_desktop and self.desktop_completion:
-            self.notifi_desktop(
+            self.notify_desktop(
                 title="Render completed", 
                 message=f"Render job completed for: {self.blender_data['project_name']} \nTotal time elapsed: {self.blender_data['total_time_elapsed']}"
                 )
@@ -937,7 +944,7 @@ class RenderNotifier:
             self.send_third_party_webhook()
             
         if self.is_desktop and self.desktop_cancel:
-            self.notifi_desktop(
+            self.notify_desktop(
                 title="Render canceled", 
                 message=f"Render job canceled for: {self.blender_data['project_name']} \nRender canceled after: {self.RENDER_CANCELLED_TIME}"
                 )
@@ -973,7 +980,7 @@ class RenderNotifier:
             logger.exception("Exception while sending third-party webhook.")
     
     @persistent
-    def notifi_desktop(self, title, message):
+    def notify_desktop(self, title, message):
         if not title or not message:
             print("⚠️ Title or message is missing for desktop notification.")
             return
