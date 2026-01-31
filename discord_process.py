@@ -1,8 +1,8 @@
 import os
 import sys
 import json
-import asyncio
 import time
+import asyncio
 import aiohttp
 from discord import Webhook, Embed
 import discord
@@ -36,8 +36,8 @@ class DiscordProcessor:
             except json.JSONDecodeError:
                 data = {"raw": st_first}
 
-            response = {"received": "first data received", "ack": True}
-            print(json.dumps(response), flush=True)
+            response = {"received": f"first data received: {data}", "ack": True}
+            #print(json.dumps(response), flush=True)
         except Exception as e:
             print(f"Error processing initial line: {e}")
             
