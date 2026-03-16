@@ -71,7 +71,7 @@ class RenderNotificationsPreferences(AddonPreferences):
     ## Discord ##
     discord_webhook_name: StringProperty( #type: ignore
         name="channel webhook name",
-        description="Name of discotrd bot that will send the notifications. Note: will use the name set in the discord channel webhook settings if this is left empty."
+        description="Name of discord bot that will send the notifications. Note: will use the name set in the discord channel webhook settings if this is left empty."
     )
     discord_webhook_url: StringProperty( #type: ignore
         name="Discord channel webhook url",
@@ -103,7 +103,7 @@ class RenderNotificationsPreferences(AddonPreferences):
         desktop_box.label(text="Desktop notifications")
         row = desktop_box.row()
         row.label(text="Custom Sound:")
-        row.prop(self, "custom_sound", text="",placeholder="cutom_sound.wav")
+        row.prop(self, "custom_sound", text="",placeholder="custom_sound.wav")
         row = desktop_box.row()
         row.label(text="Sound path:")
         row.prop(self, "desktop_sound_path", text="")
@@ -239,62 +239,114 @@ class Render_Notifications_Properties(PropertyGroup):
         default=False
     )# type: ignore
 
-# create UI elaments for addon properties in the render properties tab
-class RenderNotificationsRenderPanel(Panel):
-    """Creates a notifications panel in the render properties tab"""
-    bl_label = "Notifications"
-    bl_idname = "RENDER_PT_Notifications"
+class RenderNotificationsPanel:
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "render"
-    bl_parent_id = "RENDER_PT_context"
+
+# create UI elements for addon properties in the render properties tab
+class RENDER_PT_Notifications(RenderNotificationsPanel, Panel):
+    """Creates a notifications panel in the render properties tab"""
+    bl_label = "Render Notifications"
+    bl_idname = "RENDER_PT_Notifications"
+    bl_order = 999
+    
+    def draw_header(self,context):
+        scene = context.scene
+        props = scene.render_panel_props
+        layout = self.layout
+        layout.prop(props, "enable_notifications", text="", icon="INTERNET") 
 
     # Drawing addon UI in the render properties panel
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        props = scene.render_panel_props  # Access our custom property
+        props = scene.render_panel_props 
+        layout.enabled = props.enable_notifications
+
+class RENDER_PT_Desktop_Notifications(RenderNotificationsPanel, Panel):
+    bl_label = "Desktop Notifications"
+    bl_parent_id = "RENDER_PT_Notifications"
+    bl_options = {'DEFAULT_CLOSED'}
+    
+    def draw_header(self,context):
+        scene = context.scene
+        props = scene.render_panel_props
+        layout = self.layout
+        layout.enabled = props.enable_notifications
+        layout.prop(props, "is_desktop", text="") 
+    
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        props = scene.render_panel_props 
+        layout.enabled = props.is_desktop
         
-        # nitification properties for each notification type
+        # notification properties for desktop notifications
         desktop_box = layout.box()
-        row = desktop_box.row(align=True)
-        row.prop(props, "is_desktop", text="")  # Checkbox (no extra text)
-        row.prop(props, "is_desktop", text="Desktop Notifications", emboss=False, toggle=True,icon='WORLD_DATA')  # Label with dropdown effect
         
-        discord_box = layout.box()
-        row = discord_box.row(align=True)
-        row.prop(props, "is_discord", text="")  # Checkbox (no extra text)
-        row.prop(props, "is_discord", text="Discord Notifications", emboss=False, toggle=True,icon='WORLD_DATA')  # Label with dropdown effect
-        
-        third_party_webhook_box = layout.box()
-        row = third_party_webhook_box.row(align=True)
-        row.prop(props, "is_third_party_webhook", text="")  # Checkbox (no extra text)
-        row.prop(props, "is_third_party_webhook", text="third-party webhook notifications", emboss=False, toggle=True,icon='WORLD_DATA')  # Label with dropdown effect
-        
-        # If checkbox is enabled, show additional settings for each notification type
-        if props.is_desktop:
-            desktop_col = desktop_box.column()
-            desktop_col.label(text="Configure Notifications:")
-            desktop_col.prop(props, "desktop_start", text="notify on start")
-            desktop_col.prop(props, "desktop_first", text="notify on first")
-            desktop_col.prop(props, "desktop_completion", text="notify on completion")
-            desktop_col.prop(props, "desktop_cancel", text="notify on cancel")
+        # If checkbox is enabled, show additional settings for desktop notifications
+        desktop_col = desktop_box.column()
+        desktop_col.label(text="Configure Notifications:")
+        desktop_col.prop(props, "desktop_start", text="notify on start")
+        desktop_col.prop(props, "desktop_first", text="notify on first")
+        desktop_col.prop(props, "desktop_completion", text="notify on completion")
+        desktop_col.prop(props, "desktop_cancel", text="notify on cancel")
             
-        if props.is_discord:
-            discord_col = discord_box.column()
-            discord_col.label(text="Configure Notifications:")
-            discord_col.prop(props, "discord_preview", text="Send previews")
-            discord_col.prop(props, "use_custom_preview_path", text="Use custom preview path")
-            discord_col.prop(props, "discord_preview_path", text="Previews save location") 
+class RENDER_PT_Discord_Notifications(RenderNotificationsPanel, Panel):
+    bl_label = "Discord Notifications"
+    bl_parent_id = "RENDER_PT_Notifications"
+    bl_options = {'DEFAULT_CLOSED'}
+    
+    def draw_header(self,context):
+        scene = context.scene
+        props = scene.render_panel_props
+        layout = self.layout
+        layout.enabled = props.enable_notifications
+        layout.prop(props, "is_discord", text="") 
+    
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        props = scene.render_panel_props 
+        layout.enabled = props.is_discord
         
-        if props.is_third_party_webhook:
-            third_party_webhook_col = third_party_webhook_box.column()
-            third_party_webhook_col.label(text="Configure Notifications:")
-            third_party_webhook_col.prop(props, "third_party_webhook_every_frame", text="notify on everyframe")
-            third_party_webhook_col.prop(props, "third_party_webhook_start", text="notify on start")
-            third_party_webhook_col.prop(props, "third_party_webhook_first", text="notify on first")
-            third_party_webhook_col.prop(props, "third_party_webhook_completion", text="notify on completion")
-            third_party_webhook_col.prop(props, "third_party_webhook_cancel", text="notify on cancel")
+        # notification properties for discord notifications
+        discord_box = layout.box()
+        discord_col = discord_box.column()
+        discord_col.label(text="Configure Notifications:")
+        discord_col.prop(props, "discord_preview", text="Send previews")
+        discord_col.prop(props, "use_custom_preview_path", text="Use custom preview path")
+        discord_col.prop(props, "discord_preview_path", text="Previews save location") 
+
+class RENDER_PT_Webhook_Notifications(RenderNotificationsPanel, Panel):
+    bl_label = "Third Party Webhook Notifications"
+    bl_parent_id = "RENDER_PT_Notifications"
+    bl_options = {'DEFAULT_CLOSED'}
+    
+    def draw_header(self,context):
+        scene = context.scene
+        props = scene.render_panel_props
+        layout = self.layout
+        layout.enabled = props.enable_notifications
+        layout.prop(props, "is_third_party_webhook", text="") 
+    
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        props = scene.render_panel_props 
+        layout.enabled = props.is_third_party_webhook
+        
+        # notification properties for webhook notifications
+        third_party_webhook_box = layout.box()
+        
+        third_party_webhook_col = third_party_webhook_box.column()
+        third_party_webhook_col.label(text="Configure Notifications:")
+        third_party_webhook_col.prop(props, "third_party_webhook_every_frame", text="notify on every frame")
+        third_party_webhook_col.prop(props, "third_party_webhook_start", text="notify on start")
+        third_party_webhook_col.prop(props, "third_party_webhook_first", text="notify on first")
+        third_party_webhook_col.prop(props, "third_party_webhook_completion", text="notify on completion")
+        third_party_webhook_col.prop(props, "third_party_webhook_cancel", text="notify on cancel")
 
 
 # RenderNotifier class to handle the rendering notifications logic
@@ -408,7 +460,7 @@ class RenderNotifier:
                 print(f"Skipping frame {current_frame} ({self.skip_frame_counter}/{self.skip_frame})")
                 return
             elif self.skip_frame_counter == self.skip_frame and self.is_skip_frame:
-                print(f"stop skiiping frames: frame {current_frame} ({self.skip_frame_counter}/{self.skip_frame})")
+                print(f"stop skipping frames: frame {current_frame} ({self.skip_frame_counter}/{self.skip_frame})")
                 self.skip_frame_counter = 0
                 self.is_skip_frame = False
                 #return
@@ -489,7 +541,7 @@ class RenderNotifier:
                 print(f"Error closing subprocess: {e}")
             print(f"✅ Successfully ran writing subprocess in {time.time() - start_timer} seconds")
         except Exception as e:
-            print(f"⚠️ Error occurred while running writing subproccess: {e}")
+            print(f"⚠️ Error occurred while running writing subprocess: {e}")
 
     # Handle render logic
     @persistent
@@ -991,7 +1043,7 @@ class RenderNotifier:
         if not title or not message:
             print("⚠️ Title or message is missing for desktop notification.")
             return
-        #print("\n Notifing via desktop \n")
+        #print("\n Notifying via desktop \n")
         desktop_notify = Notify()
         desktop_notify.title = title
         desktop_notify.message = message
@@ -1020,8 +1072,11 @@ notifier_instance = RenderNotifier()
 
 # List of classes to register
 classes = [
-    RenderNotificationsProperties, 
-    RenderNotificationsRenderPanel, 
+    Render_Notifications_Properties, 
+    RENDER_PT_Notifications,
+    RENDER_PT_Desktop_Notifications,
+    RENDER_PT_Discord_Notifications,
+    RENDER_PT_Webhook_Notifications,
     RenderNotificationsPreferences
 ]
 
@@ -1031,7 +1086,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.Scene.render_panel_props = bpy.props.PointerProperty(type=RenderNotificationsProperties)
+    bpy.types.Scene.render_panel_props = bpy.props.PointerProperty(type=Render_Notifications_Properties)
  
     bpy.app.handlers.render_init.append(notifier_instance.render_init)         # Called when render starts
     bpy.app.handlers.render_post.append(notifier_instance.render_post)         # Called after each frame is rendered
