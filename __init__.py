@@ -91,6 +91,31 @@ class RenderNotificationsPreferences(AddonPreferences):
         name="Third-party webhook url",
         description="Third-party webhook url to send notifications to."
     )
+    third_party_simple_start_message: StringProperty( #type: ignore
+        name="Third-party webhook On-Start",
+        description="Simple message to send once the render has started.",
+        default="Render started."
+    )
+    third_party_simple_first_message: StringProperty( #type: ignore
+        name="Third-party webhook On-First",
+        description="Simple message to send once the first frame has rendered.",
+        default="First frame rendered."
+    )
+    third_party_simple_completion_message: StringProperty( #type: ignore
+        name="Third-party webhook On-Completion",
+        description="Simple message to send on the once the render completed.",
+        default="Render Completed."
+    )
+    third_party_simple_cancel_message: StringProperty( #type: ignore
+        name="Third-party webhook On-Cancel",
+        description="Simple message to send on render cancellation.",
+        default="Render Canceled."
+    )
+    simple_render_data: BoolProperty( #type: ignore
+        name="Send simplified render data",
+        description="attach simplified render data to simplified notifications. Data sent: project name, job type, total frames, frame range, first frame time, render time and est. render time",
+        default=False
+    )
     
     # Drawing UI for addon preferences
     def draw(self, context):
@@ -129,6 +154,34 @@ class RenderNotificationsPreferences(AddonPreferences):
         row = third_party_webhook_box.row()
         row.label(text="Third-party webhook url:")
         row.prop(self, "third_party_webhook_url", text="")
+        
+        # simple messages #
+        third_party_webhook_box.label(text="")
+        row = third_party_webhook_box.row()
+        third_party_webhook_box.label(text="Send simplified webhook notifications")
+        
+        # enable render data
+        row = third_party_webhook_box.row()
+        row.label(text="Send simplified render data:")
+        row.prop(self, "simple_render_data", text="")
+        
+        # on render start
+        row = third_party_webhook_box.row()
+        row.label(text="Message on render Start:")
+        row.prop(self, "third_party_simple_start_message", text="")
+        # on first frame
+        row = third_party_webhook_box.row()
+        row.label(text="Message on First frame rendered:")
+        row.prop(self, "third_party_simple_first_message", text="")
+        # on render completion
+        row = third_party_webhook_box.row()
+        row.label(text="Message on render Completion:")
+        row.prop(self, "third_party_simple_completion_message", text="")
+        # on render cancel
+        row = third_party_webhook_box.row()
+        row.label(text="Message on render Cancellation:")
+        row.prop(self, "third_party_simple_cancel_message", text="")
+        
 
 # Update function for webhook settings
 def update_third_party_webhook_every_frame(self, context):
@@ -249,7 +302,6 @@ class RENDER_PT_Notifications(RenderNotificationsPanel, Panel):
     """Creates a notifications panel in the render properties tab"""
     bl_label = "Render Notifications"
     bl_idname = "RENDER_PT_Notifications"
-    bl_order = 999
     
     def draw_header(self,context):
         scene = context.scene

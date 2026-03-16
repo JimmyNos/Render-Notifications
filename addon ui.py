@@ -145,6 +145,10 @@ class RENDER_PT_Desktop_Notifications(RenderNotificationsPanel, Panel):
         props = scene.render_panel_props
         layout = self.layout
         layout.enabled = props.enable_notifications
+        desktop_boxs = layout.box()
+        row = desktop_boxs.row(align=True)
+        row.prop(props, "is_desktop", text="")  # Checkbox (no extra text)
+        row.prop(props, "is_desktop", text="Desktop Notifications", emboss=False, toggle=True,icon='WORLD_DATA')
         layout.prop(props, "is_desktop", text="") 
     
     def draw(self, context):
