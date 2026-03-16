@@ -140,8 +140,15 @@ def update_third_party_webhook_every_frame(self, context):
     self.third_party_webhook_cancel = state
 
 # Define a property group to hold the render notifications properties
-class RenderNotificationsProperties(PropertyGroup):
-    #desktop nitifications
+class Render_Notifications_Properties(PropertyGroup):
+    #enable notifications
+    enable_notifications: bpy.props.BoolProperty(
+        name="Enable notifications",  # This will appear as the checkbox label
+        description="Enable render notifications.",
+        default=False
+    ) # type: ignore
+    
+    #desktop notifications
     desktop_start: bpy.props.BoolProperty(
         name="Desktop notify on start",
         description="Send desktop notifications when the render job starts.",
@@ -166,12 +173,12 @@ class RenderNotificationsProperties(PropertyGroup):
     #discord notifications
     discord_preview: bpy.props.BoolProperty(
         name="Desktop notify with preview",
-        description="Send the first and final frame to discord for an animation job, or a still image when a still render job is complete complete. Note: the default save location for the preview is set in the addon prefrences. if the output extention is openEXR or the size of the frame/still is larger than discord's allowed attachment size (with or without nitro), no preview will be sent.",
+        description="Send the first and final frame to discord for an animation job, or a still image when a still render job is complete complete. Note: the default save location for the preview is set in the addon preferences. if the output extension is openEXR or the size of the frame/still is larger than discord's allowed attachment size (with or without nitro), no preview will be sent.",
         default=False  # Starts unchecked
     ) # type: ignore
     use_custom_preview_path: bpy.props.BoolProperty(
-        name="Use cutsom preview path",
-        description="Use a custom path for the previewed renders that are sent to discord. Note: the default save location for the preview is set in the addon prefrences and will be used if this is unchecked.",
+        name="Use custom preview path",
+        description="Use a custom path for the previewed renders that are sent to discord. Note: the default save location for the preview is set in the addon preferences and will be used if this is unchecked.",
         default=False  # Starts unchecked
     ) # type: ignore
     discord_preview_path: bpy.props.StringProperty( #type: ignore
@@ -185,8 +192,8 @@ class RenderNotificationsProperties(PropertyGroup):
     
     #Third-party webhook notifications
     third_party_webhook_every_frame: bpy.props.BoolProperty(
-        name="Third-party webhook notify on everyframe",
-        description="Send third-party webhook notifications on everyframe.",
+        name="Third-party webhook notify on every frame",
+        description="Send third-party webhook notifications on every frame.",
         default=False,  # Starts unchecked
         update=update_third_party_webhook_every_frame
     ) # type: ignore
