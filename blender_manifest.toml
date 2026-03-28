@@ -8,7 +8,7 @@ maintainer = "Michael Mosako (JimmyNoStar)"
 type = "add-on"
 website = "https://github.com/JimmyNos/Render-Notifications"
 tags = ["Render", "System"]
-blender_version_min = "4.5.0"
+blender_version_min = "5.1.0"
 
 license = [
   "SPDX:GPL-3.0-or-later",
