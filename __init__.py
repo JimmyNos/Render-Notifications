@@ -37,7 +37,7 @@ import json
 import shutil
 import requests
 import math
-
+import audioop
 from datetime import datetime
 
 import discord
@@ -46,9 +46,9 @@ from discord import Webhook as DiscordWebhookClass, Embed as DiscordEmbedClass
 Notify = NotifyClass
 DiscordWebhook = DiscordWebhookClass
 DiscordEmbed = DiscordEmbedClass
-
 import asyncio
 import aiohttp
+import multidict
 
 # Define the addon preferences class
 class RenderNotificationsPreferences(AddonPreferences):
