@@ -1190,7 +1190,11 @@ class RenderNotifier:
                 
             print(payload)
         else:
-            payload = self.blender_data
+            blender_data = self.blender_data
+            blender_data.pop('discord_webhook_url', None)
+            blender_data.pop('discord_webhook_name', None)
+            blender_data.pop('discord_preview', None)
+            payload = blender_data
             print(payload)
         import logging
 
