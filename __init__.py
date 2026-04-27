@@ -91,6 +91,11 @@ class RenderNotificationsPreferences(AddonPreferences):
         name="Third-party webhook url",
         description="Third-party webhook url to send notifications to."
     )
+    third_party_simple_every_frame_message: StringProperty( #type: ignore
+        name="Third-party webhook On-Every-frame",
+        description="Simple message to send each time a frame is rendered on every frame render besides start, first, completion and cancel.",
+        default="Frame rendered."
+    )
     third_party_simple_start_message: StringProperty( #type: ignore
         name="Third-party webhook On-Start",
         description="Simple message to send once the render has started.",
@@ -99,7 +104,7 @@ class RenderNotificationsPreferences(AddonPreferences):
     third_party_simple_first_message: StringProperty( #type: ignore
         name="Third-party webhook On-First",
         description="Simple message to send once the first frame has rendered.",
-        default="First frame rendered."
+        default="First Frame Rendered."
     )
     third_party_simple_completion_message: StringProperty( #type: ignore
         name="Third-party webhook On-Completion",
@@ -155,6 +160,10 @@ class RenderNotificationsPreferences(AddonPreferences):
         row = third_party_webhook_box.row()
         third_party_webhook_box.label(text="Send Simplified Webhook Notifications")
         
+        # on every frame
+        row = third_party_webhook_box.row()
+        row.label(text="Message On Every Frame Rendered:")
+        row.prop(self, "third_party_simple_every_frame_message", text="")
         # on render start
         row = third_party_webhook_box.row()
         row.label(text="Message On Render Start:")
@@ -245,7 +254,6 @@ class Render_Notifications_Properties(PropertyGroup):
         description="Send third-party webhook notifications when the render job starts.",
         default=False  # Starts unchecked
     ) # type: ignore
-
     third_party_webhook_first: bpy.props.BoolProperty(
         name="Third-party webhook notify on first",
         description="Send third-party webhook notifications when the first frame has rendered.",
@@ -280,6 +288,11 @@ class Render_Notifications_Properties(PropertyGroup):
         description="Set custom message for each render stage. By default, it uses the messages set in the addon preferences.",
         default=False  # Starts unchecked
     )# type: ignore
+    on_every: bpy.props.StringProperty( #type: ignore
+        name="On Every Frame",
+        description="Simple message to send each time a frame is rendered on every frame render besides start, first, completion and cancel.",
+        default = ""
+    )
     on_start: bpy.props.StringProperty( #type: ignore
         name="On start",
         description="Simple message to send once the render has started.",
@@ -467,6 +480,7 @@ class RENDER_PT_Simplified_Webhook_Notifications(RenderNotificationsPanel, Panel
         third_party_webhook_col.label(text="Configure Simplified Notifications:")
         third_party_webhook_col.prop(props, "simple_render_data", text="Attach Simplified Render Data")
         third_party_webhook_col.prop(props, "custom_message", text="Custom Messages")
+        third_party_webhook_col.prop(props, "on_every", text="Every Frame")
         third_party_webhook_col.prop(props, "on_start", text="Start")
         third_party_webhook_col.prop(props, "on_first_frame", text="First Frame")
         third_party_webhook_col.prop(props, "on_completion", text="Completion")
@@ -761,6 +775,7 @@ class RenderNotifier:
         self.is_third_party_custom_message = bpy.context.scene.render_panel_props.custom_message
         
         # default to preferences messages
+        self.third_party_on_every = bpy.context.preferences.addons[addon_name].preferences.third_party_simple_every_frame_message
         self.third_party_on_start = bpy.context.preferences.addons[addon_name].preferences.third_party_simple_start_message
         self.third_party_on_first_frame = bpy.context.preferences.addons[addon_name].preferences.third_party_simple_first_message
         self.third_party_on_completion = bpy.context.preferences.addons[addon_name].preferences.third_party_simple_completion_message
@@ -769,11 +784,17 @@ class RenderNotifier:
         # if custom messages aren't empty
         if self.is_third_party_custom_message:
             if not bpy.context.scene.render_panel_props.on_start == "":
+                self.third_party_on_every = bpy.context.scene.render_panel_props.on_every
+                
+            if not bpy.context.scene.render_panel_props.on_start == "":
                 self.third_party_on_start = bpy.context.scene.render_panel_props.on_start
+                
             if not bpy.context.scene.render_panel_props.on_first_frame == "":
                 self.third_party_on_first_frame = bpy.context.scene.render_panel_props.on_first_frame
+                
             if not bpy.context.scene.render_panel_props.on_completion == "":
                 self.third_party_on_completion = bpy.context.scene.render_panel_props.on_completion
+                
             if not bpy.context.scene.render_panel_props.on_cancel == "":
                 self.third_party_on_cancel = bpy.context.scene.render_panel_props.on_cancel
 
@@ -1155,6 +1176,12 @@ class RenderNotifier:
     @persistent
     def send_third_party_webhook(self,stage = 0,init=False, isfirstframe=False, finished=False, canceled=False):
         # Use the preconfigured self.third_party_webhook_url
+        step_frame = ""
+        if self.frame_step > 1:
+            step_frame = f"\nFrame Step: {self.blender_data['frame_step']}"
+        else:
+            step_frame = ""
+
         
         print(self.is_third_party_simple_render_data)
         if self.is_simple_third_party_webhook:
@@ -1163,28 +1190,33 @@ class RenderNotifier:
                     payload = self.third_party_on_start
                     
                     if self.is_third_party_simple_render_data and self.job_type == "Animation":
-                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['total_frames']}"
+                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['total_frames_stepped']}{step_frame}"
                     elif self.is_third_party_simple_render_data:
                         payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nFrame: {self.blender_data['frame']}"""
                 case 1: # first frame
                     payload = self.third_party_on_first_frame
                     
                     if self.is_third_party_simple_render_data and self.job_type == "Animation":
-                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['total_frames']}\nFirst Frame Time: {self.blender_data['RENDER_FIRST_FRAME']}\nEst. Render Time: {self.blender_data['est_render_job']}"
+                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['total_frames_stepped']}{step_frame}\nFirst Frame Time: {self.blender_data['RENDER_FIRST_FRAME']}\nEst. Render Time: {self.blender_data['est_render_job']}"
                 case 2: # complete
                     payload = self.third_party_on_completion
                     
                     if self.is_third_party_simple_render_data and self.job_type == "Animation":
-                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['Total_frames_to_render']}\nFirst Frame Time: {self.blender_data['RENDER_FIRST_FRAME']}\nRender Time: {self.blender_data['total_time_elapsed']}\nEst. Render Time: {self.blender_data['total_Est_time']}"
+                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['total_frames_stepped']}{step_frame}\nFirst Frame Time: {self.blender_data['RENDER_FIRST_FRAME']}\nRender Time: {self.blender_data['total_time_elapsed']}\nEst. Render Time: {self.blender_data['total_Est_time']}"
                     elif self.is_third_party_simple_render_data:
                         payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nFrame: {self.blender_data['frame']}\nRender Time: {self.blender_data['total_time_elapsed']}"
                 case 3: # cancel
                     payload = self.third_party_on_cancel
                     
                     if self.is_third_party_simple_render_data and self.job_type == "Animation":
-                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['Total_frames_to_render']}\nFirst Frame Time: {self.blender_data['RENDER_FIRST_FRAME']}\nCancelled Frame: {self.blender_data['frame']}\nRender Time (cancelled): {self.blender_data['RENDER_CANCELLED_TIME']}"
+                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['total_frames_stepped']}{step_frame}\nFirst Frame Time: {self.blender_data['RENDER_FIRST_FRAME']}\nCancelled Frame: {self.blender_data['frame']}\nRender Time (cancelled): {self.blender_data['RENDER_CANCELLED_TIME']}"
                     elif self.is_third_party_simple_render_data:
                         payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nFrame: {self.blender_data['frame']}\nRender Time (cancelled): {self.blender_data['RENDER_CANCELLED_TIME']}"
+                case 4: # every frame
+                    payload = self.third_party_on_every
+                    
+                    if self.is_third_party_simple_render_data and self.job_type == "Animation":
+                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['total_frames_stepped']}{step_frame}\nFirst Frame Time: {self.blender_data['RENDER_FIRST_FRAME']}\nEst. Render Time: {self.blender_data['est_render_job']}"
                 
             print(payload)
         else:
