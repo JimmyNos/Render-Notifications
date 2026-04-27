@@ -495,6 +495,8 @@ class RenderNotifier:
         self.precountdown = 0.0
         self.message_id = None
         
+        self.frame_step = 1
+        
         self.file = None
         self.no_preview = False
         self.rendered_frame_path = ""
@@ -541,7 +543,6 @@ class RenderNotifier:
         self.RENDER_FIRST_FRAME = None
         self.RENDER_CURRENT_FRAME = None
         self.RENDER_CANCELLED_TIME = None
-        self.total_frames = 0
         self.average_time = 0
         self.job_type = ""
         self.blender_data = {}
@@ -686,10 +687,15 @@ class RenderNotifier:
         self.blender_data['render_start_countdown'] = self.render_start_countdown = time.time()
         
         self.total_frames = bpy.context.scene.frame_end - bpy.context.scene.frame_start + 1
+        self.frame_step  = bpy.context.scene.frame_step if bpy.context.scene.frame_step > 0 else 1
+        #self.total_frames = self.total_frames / self.frame_step
         
         self.blender_data["call_type"] = "render_init"
         self.blender_data["project_name"] = self.blend_filename
         self.blender_data["total_frames"] = self.total_frames
+        self.blender_data["total_frames_stepped"] = round(self.total_frames / self.frame_step)
+        self.blender_data["frame_step"] = self.frame_step
+        self.blender_data["is_frame_step"] = True if self.frame_step > 1 else False
         
         ## Desktop ##
         self.is_custom_sound = bpy.context.preferences.addons[addon_name].preferences.custom_sound
@@ -791,7 +797,7 @@ class RenderNotifier:
             self.blender_data["job_type"] = self.job_type
             self.blender_data["frame"] = bpy.context.scene.frame_current
             self.blender_data["frame_range"] = f"{bpy.context.scene.frame_start} - {bpy.context.scene.frame_end}"
-            self.blender_data["Total_frames_to_render"] = self.total_frames
+            self.blender_data["Total_frames_to_render"] = self.total_frames / self.frame_step
             print(f"Current frame: {self.current_frame} {self.blender_data['frame']} {bpy.context.scene.frame_current}")    
             
             if self.is_discord:
@@ -836,6 +842,7 @@ class RenderNotifier:
         self.current_frame = scene.frame_current
         current_frame = scene.frame_current
         is_first_frame = self.current_frame == scene.frame_start
+        stepped_frames = self.total_frames / self.frame_step
         
         try:
             if self.is_animation:
@@ -851,7 +858,7 @@ class RenderNotifier:
                     # Estimate average time per frame and total job duration
                     self.precountdown = time.time() - self.render_start_countdown
                     self.current_frame_time = self.precountdown
-                    self.countdown = int(time.time() + self.precountdown * (self.total_frames - self.counter))
+                    self.countdown = int(time.time() + self.precountdown * (stepped_frames - self.counter))
                     self.current_countdown = int(time.time() + self.precountdown)
                     self.precountdown = time.time()
                     
@@ -862,10 +869,10 @@ class RenderNotifier:
                     # Populate render info for sending to Discord or display
                     self.blender_data["frame"] = current_frame
                     self.blender_data["RENDER_FIRST_FRAME"] = str(self.RENDER_FIRST_FRAME)[:-4]
-                    self.blender_data["est_render_job"] = str(self.RENDER_FIRST_FRAME * (self.total_frames - self.counter))[:-4]
-                    self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
+                    self.blender_data["est_render_job"] = str(self.RENDER_FIRST_FRAME * (stepped_frames - self.counter))[:-4]
+                    self.blender_data["frames_left"] = f"{stepped_frames - self.counter}"
                     self.blender_data["frames_rendered"] = self.counter
-                    self.blender_data["rendered_frames_percentage"] = round((self.counter / self.total_frames * 100),2)
+                    self.blender_data["rendered_frames_percentage"] = round((self.counter / stepped_frames * 100),2)
                     self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
                     self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
                     
@@ -918,7 +925,7 @@ class RenderNotifier:
                         # Time per frame and ETA calculations
                         self.precountdown = time.time() - self.precountdown
                         self.current_frame_time = self.precountdown
-                        self.countdown = int(time.time() + self.precountdown * (self.total_frames - self.counter))
+                        self.countdown = int(time.time() + self.precountdown * (stepped_frames - self.counter))
                         self.current_countdown = int(time.time() + self.precountdown)
                         self.counter += 1
                         self.RENDER_CURRENT_FRAME = datetime.now() - self.RENDER_PRE_TIME
@@ -927,17 +934,17 @@ class RenderNotifier:
                         self.precountdown = time.time()
                         
                         # Estimate remaining time
-                        if self.total_frames != self.counter:
-                            self.blender_data["est_render_job"] = str(self.RENDER_CURRENT_FRAME * (self.total_frames - self.counter))[:-4]
+                        if stepped_frames != self.counter:
+                            self.blender_data["est_render_job"] = str(self.RENDER_CURRENT_FRAME * (stepped_frames - self.counter))[:-4]
                         else:
-                            self.blender_data["est_render_job"] = str(self.RENDER_CURRENT_FRAME * (self.total_frames - self.counter + 1))[:-4]
+                            self.blender_data["est_render_job"] = str(self.RENDER_CURRENT_FRAME * (stepped_frames - self.counter + 1))[:-4]
                             
                         # Update per-frame render data
                         self.blender_data["frame"] = current_frame
                         self.blender_data["RENDER_CURRENT_FRAME"] = str(self.RENDER_CURRENT_FRAME)[:-4]
-                        self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
+                        self.blender_data["frames_left"] = f"{stepped_frames - self.counter}"
                         self.blender_data["frames_rendered"] = self.counter
-                        self.blender_data["rendered_frames_percentage"] = round((self.counter / self.total_frames * 100),2)
+                        self.blender_data["rendered_frames_percentage"] = round((self.counter / stepped_frames * 100),2)
                         self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
                         self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
                         
@@ -1050,7 +1057,7 @@ class RenderNotifier:
         if self.is_animation:
             # Update metadata
             self.blender_data["average_time"] = str(self.average_time)[:-4]
-            self.blender_data["total_Est_time"] = str(self.RENDER_FIRST_FRAME * self.total_frames)[:-4]
+            self.blender_data["total_Est_time"] = str(self.RENDER_FIRST_FRAME * (self.total_frames / self.frame_step))[:-4]
             
         if self.discord_preview and self.is_discord:
             bpy.app.timers.register(delayed_save, first_interval=0.2)
@@ -1137,7 +1144,7 @@ class RenderNotifier:
             self.blender_data["current_frame"] = cancel_frame
             self.blender_data["total_frames_rendered"] = bpy.context.scene.frame_end - cancel_frame
             self.blender_data["frames_still_to_render_range"] = f"{cancel_frame} - {bpy.context.scene.frame_end}"
-            self.blender_data["frames_still_to_render"] = f"{bpy.context.scene.frame_end - self.current_frame}"
+            self.blender_data["frames_still_to_render"] = f"{round((bpy.context.scene.frame_end - self.current_frame) / self.frame_step)}"
             
         if self.discord_preview and self.is_discord:
             bpy.app.timers.register(delayed_save, first_interval=0.2)

@@ -27,6 +27,8 @@ class DiscordProcessor:
         self.thumb_attach = None
         self.first_attach = None
         self.still_attach = None
+        
+        self.is_step = False
 
     async def run(self):
         st_first = sys.stdin.readline().strip()
@@ -37,7 +39,6 @@ class DiscordProcessor:
                 data = {"raw": st_first}
 
             response = {"received": f"first data received: {data}", "ack": True}
-            #print(json.dumps(response), flush=True)
         except Exception as e:
             print(f"Error processing initial line: {e}")
             
@@ -163,12 +164,17 @@ class DiscordProcessor:
                                colour=discord.Colour.light_embed(),
                                timestamp=discord.utils.utcnow())
         
-        #print("Starting")
-        
         # set the embed fields with the data genarated from blender   
+        frame_step = self.blender_data.get('frame_step')
+        total_frames = "Total frames"
+        if self.blender_data.get('is_frame_step'):
+            total_frames = f"Total frames (St. {frame_step})"
+        else:
+            total_frames = "Total frames"
+        
         if isAnimation: 
             self.animation_embed.add_field(name="Job type", value=self.blender_data.get('job_type'), inline=False)
-            self.animation_embed.add_field(name="Total frames", value=self.blender_data.get('total_frames'), inline=True)
+            self.animation_embed.add_field(name=total_frames, value=self.blender_data.get('total_frames_stepped'), inline=True)
             self.animation_embed.add_field(name="Frame Range", value=self.blender_data.get('frame_range'), inline=True)
             self.animation_embed.add_field(name="Frame", value="...", inline=True)
             self.animation_embed.add_field(name="frames rendered", value="...", inline=True)
@@ -181,7 +187,7 @@ class DiscordProcessor:
             self.animation_embed.set_footer(text="*(^◕.◕^)*")
             
             self.first_frame_embed.add_field(name="Job type", value=self.blender_data.get('job_type'), inline=False)
-            self.first_frame_embed.add_field(name="Total frames", value=self.blender_data.get('total_frames'), inline=True)
+            self.first_frame_embed.add_field(name=total_frames, value=self.blender_data.get('total_frames_stepped'), inline=True)
             self.first_frame_embed.add_field(name="Frame Range", value=self.blender_data.get('frame_range'), inline=True)
             self.first_frame_embed.add_field(name="Frame", value=self.blender_data.get('frame'), inline=True)
             self.first_frame_embed.add_field(name="Total est. time", value="...", inline=True)
@@ -202,18 +208,15 @@ class DiscordProcessor:
     
     # Load new data into embeds every time a frame is rendered
     def em_post(self,isAnimation):
-        #print(f"Updating embed with new data {isAnimation}, Frames rendered: {self.blender_data['frames_rendered']}")
         if isAnimation: 
             
-            self.frames_rendered_field = "("+str(self.blender_data.get('frames_rendered'))+"/"+str(self.blender_data.get('total_frames'))+") "+str(self.blender_data.get('rendered_frames_percentage'))+"%"
+            self.frames_rendered_field = "("+str(self.blender_data.get('frames_rendered'))+"/"+str(self.blender_data.get('total_frames_stepped'))+") "+str(self.blender_data.get('rendered_frames_percentage'))+"%"
             
             #check if it's the first frame
             if self.blender_data.get("frames_rendered") == 1:
-                #print("First frame rendered")
                 if self.discord_preview and not self.no_first_preview:
                     try:
                         if os.path.isfile(self.blender_data.get('final_first_path')):
-                            #print("valid file path")
                             self.thumb_path = self.blender_data.get('final_first_path')
                             #thumbattach = "attachment://first_render.png"
                             self.first_attach = "first_render.png"
@@ -360,7 +363,7 @@ class DiscordProcessor:
                             self.no_preview = True
                     self.animation_embed.description += "\nCanceled" if not self.no_preview else "\nCanceled (no preview available)"
                     self.animation_embed.set_field_at(index=3,name="Unfinished Frame", value=self.blender_data.get('current_frame'), inline=True)
-                    self.animation_embed.add_field(name="Still to render", value="("+str(self.blender_data.get('frames_still_to_render'))+"/"+str(self.blender_data.get('total_frames'))+")", inline=False)
+                    self.animation_embed.add_field(name="Still to render", value="("+str(self.blender_data.get('frames_still_to_render'))+"/"+str(self.blender_data.get('total_frames_stepped'))+")", inline=False)
                     self.animation_embed.add_field(name="Job Cancelled", value=self.blender_data.get('RENDER_CANCELLED_TIME'), inline=False)
                     self.animation_embed.set_footer(text="[X_ X)")
                     self.animation_embed.colour=discord.Colour.red()
@@ -368,7 +371,7 @@ class DiscordProcessor:
                     #run if canceled before frist frame starts rendering
                     self.animation_embed.description += "\nCanceled" if not self.no_preview else "\nCanceled (no preview available)"
                     self.animation_embed.set_field_at(index=3,name="Frame", value=self.blender_data.get('current_frame'), inline=True)
-                    self.animation_embed.add_field(name="Still to render", value="("+str(self.blender_data.get('frames_still_to_render'))+"/"+str(self.blender_data.get('total_frames'))+")", inline=False)
+                    self.animation_embed.add_field(name="Still to render", value="("+str(self.blender_data.get('frames_still_to_render'))+"/"+str(self.blender_data.get('total_frames_stepped'))+")", inline=False)
                     self.animation_embed.add_field(name="Job Cancelled", value=self.blender_data.get('RENDER_CANCELLED_TIME'), inline=False)
                     self.animation_embed.set_footer(text="[X_ X)")
                     self.animation_embed.colour=discord.Colour.red()
