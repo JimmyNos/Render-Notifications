@@ -526,10 +526,6 @@ class RenderNotifier:
         self.is_response_received = False
         
         self.p = None
-        
-        #self.still_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
-        #self.first_frame_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
-        #self.animation_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
     
     # reset variables on render initialization
     # this is called when the render job starts
@@ -734,7 +730,6 @@ class RenderNotifier:
             # Use sys.executable and the addon path to ensure we run the project's sub.py
             addon_dir = os.path.dirname(__file__)
             discord_process = os.path.join(addon_dir, "discord_process.py")
-            #print("Addon directory:", discord_process)
             
             # Parent process environment variables
             parent_env = os.environ.copy()
@@ -830,7 +825,6 @@ class RenderNotifier:
                     title="Render started", 
                     message="Render job started for: " + self.blender_data["project_name"]
                     )
-        #print(f"Render job type: {self.job_type}")
         
     # Handle render post logic
     @persistent   
@@ -983,7 +977,6 @@ class RenderNotifier:
         except Exception as e:
             print(f"Error in render post logic: {e}")
             print(self.counter)
-        #print("Render Post Logic Completed")
         
     # check if rendering frame is the first frame in the timeline
     @persistent
@@ -1012,8 +1005,6 @@ class RenderNotifier:
         self.RENDER_TOTAL_TIME = datetime.now() - self.RENDER_START_TIME
         self.blender_data["call_type"] = "complete"
         self.blender_data["total_time_elapsed"] = str(self.RENDER_TOTAL_TIME)[:-4]
-        
-        #print(f"discord_preview: {self.discord_preview}")
         
         # Detect if the render was a still frame (only one frame rendered)
         if self.current_frame == scene.frame_start:

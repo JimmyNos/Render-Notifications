@@ -218,15 +218,10 @@ class DiscordProcessor:
                     try:
                         if os.path.isfile(self.blender_data.get('final_first_path')):
                             self.thumb_path = self.blender_data.get('final_first_path')
-                            #thumbattach = "attachment://first_render.png"
                             self.first_attach = "first_render.png"
-                            #self.animation_embed.set_thumbnail(url=thumbattach)
-                            #self.first_frame_embed.set_thumbnail(url=thumbattach)
                             self.animation_embed.set_image(url="attachment://" + self.first_attach)
-                            #self.animation_embed.set_thumbnail(url="attachment://" + self.first_attach)
                             self.first_frame_embed.set_image(url="attachment://" + self.first_attach)
                         else:
-                            #print(f"⚠️ File not found: {self.blender_data.get('final_first_path')}")
                             self.thumbfile = None
                     except Exception as e:
                         print(f"Error occurred while setting thumbnail for first frame in en_post: {e}")   
@@ -267,8 +262,6 @@ class DiscordProcessor:
                             self.animation_embed.set_image(url=None)
                             self.animation_embed.set_image(url="attachment://" + self.attach)
                         else:
-                            #print(f"⚠️ File not found: {self.final_path}")
-                            #self.file = None
                             self.no_preview = True
 
                         if not self.no_first_preview:
@@ -278,8 +271,6 @@ class DiscordProcessor:
                                 self.thumb_attach = "first_render.png"
                                 self.animation_embed.set_thumbnail(url="attachment://" + self.thumb_attach)
                             else:
-                                #print(f"⚠️ File not found: {self.blender_data.get('final_first_path')}")
-                                #self.thumbfile = None
                                 self.no_preview = True
                     except Exception as e:
                         print(f"An error occurred in en_com A1 when uploading images: {e}.")
@@ -291,19 +282,6 @@ class DiscordProcessor:
                 self.animation_embed.set_field_at(index=10, name="Total time elapsed", value=self.blender_data.get('total_time_elapsed'), inline=True)
                 self.animation_embed.set_footer(text="( *︾▽︾)")
                 
-                #if self.discord_preview and not self.no_preview:
-                #    try:
-                #        if os.path.isfile(self.final_path):
-                #            self.file_path = self.final_path
-                #            self.attach = "complete_render.png"
-                #            self.animation_embed.set_image(url="attachment://" + self.attach)
-                #        else:
-                #            #print(f"⚠️ File not found: {self.final_path}")
-                #            #self.file = None
-                #            self.no_preview = True
-                #    except Exception as e:
-                #        print(f"An error occurred in en_com A2 when uploading images: {e}")
-                #        self.no_preview = True
                 self.animation_embed.colour=discord.Colour.green()
             except Exception as e:
                 print(f"An error occurred in en_com A2: {e}")
@@ -317,8 +295,6 @@ class DiscordProcessor:
                             self.still_attach = "complete_render.png"
                             self.still_embed.set_image(url="attachment://" + self.still_attach)
                         else:
-                            #print(f"⚠️ File not found: {self.final_path}")
-                            #self.file = None
                             self.no_preview = True
                     except Exception as e:
                         print(f"An error occurred in en_com S1: {e}")
@@ -343,7 +319,6 @@ class DiscordProcessor:
                                     self.thumb_path = self.blender_data.get('final_first_path')
                                     self.thumb_attach = "first_render.png"
                                     self.animation_embed.set_thumbnail(url="attachment://" + self.thumb_attach)
-                                    #self.animation_embed.set_image(url=None)
                                     self.file_path = self.final_path
                                     self.attach = "cencel_render.png"
                                     self.animation_embed.set_image(url="attachment://" + self.attach)
@@ -385,8 +360,6 @@ class DiscordProcessor:
                         self.still_attach = "cencel_render.png"
                         self.still_embed.set_image(url="attachment://" + self.still_attach)
                     else:
-                        #print(f"⚠️ File not found: {self.final_path}")
-                        #self.file = None
                         self.no_preview = True
                 except Exception as e:
                     print(f"An error occurred in still en_cancel 3: {e}")
@@ -399,21 +372,17 @@ class DiscordProcessor:
 
     # Send a discord message when the render job is complete         
     async def send_on_complete(self, full_hook=None, webhook=None):
-        #print(f"full_hook.guild_id: {full_hook.guild_id}, full_hook.channel_id: {full_hook.channel_id}, self.message_id: {self.message_id}")
         message_link = f"https://discord.com/channels/{full_hook.guild_id}/{full_hook.channel_id}/{self.message_id}"
         reply_content = f"{message_link}" # link to main message
         self.complete_embed.description += f"\n## {reply_content}"
         await webhook.send(username=self.blender_data.get("discord_webhook_name"), embed=self.complete_embed)
-        #print("reply sent")
     
     # Send a discord message when the render job is canceled
     async def send_on_cancel(self, full_hook=None, webhook=None):
-        #print(f"full_hook.guild_id: {full_hook.guild_id}, full_hook.channel_id: {full_hook.channel_id}, self.message_id: {self.message_id}")
         message_link = f"https://discord.com/channels/{full_hook.guild_id}/{full_hook.channel_id}/{self.message_id}"
         reply_content = f"{message_link}" # link to main message
         self.cancel_embed.description += f"\n## {reply_content}"
         await webhook.send(username=self.blender_data.get("discord_webhook_name"), embed=self.cancel_embed)
-        #print("reply sent")
     
     # Send a new discord message or edit embeded message
     async def send_or_update_embed(self, webhook, init=False, frame=False, finished=False, canceled=False):
@@ -426,8 +395,6 @@ class DiscordProcessor:
         elif frame:
             if self.blender_data['job_type'] == "Animation": 
                 self.em_post(True)
-            #else: 
-            #    self.em_post(False)
         elif finished:
             if self.blender_data['job_type'] == "Animation": 
                 self.em_complete(True)
@@ -537,8 +504,6 @@ class DiscordProcessor:
                 
                 # If the job is finished or canceled, clear the message_id                  
                 if canceled or finished:
-                    #self.animation_embed.clear_fields()
-                    #self.still_embed.clear_fields()
                     self.message_id = None
                     
             except aiohttp.ClientError as client_error:
