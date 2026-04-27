@@ -71,7 +71,7 @@ class RenderNotificationsPreferences(AddonPreferences):
     ## Discord ##
     discord_webhook_name: StringProperty( #type: ignore
         name="channel webhook name",
-        description="Name of discotrd bot that will send the notifications. Note: will use the name set in the discord channel webhook settings if this is left empty."
+        description="Name of discord bot that will send the notifications. Note: will use the name set in the discord channel webhook settings if this is left empty."
     )
     discord_webhook_url: StringProperty( #type: ignore
         name="Discord channel webhook url",
@@ -91,44 +91,96 @@ class RenderNotificationsPreferences(AddonPreferences):
         name="Third-party webhook url",
         description="Third-party webhook url to send notifications to."
     )
+    third_party_simple_every_frame_message: StringProperty( #type: ignore
+        name="Third-party webhook On-Every-frame",
+        description="Simple message to send each time a frame is rendered on every frame render besides start, first, completion and cancel.",
+        default="Frame rendered."
+    )
+    third_party_simple_start_message: StringProperty( #type: ignore
+        name="Third-party webhook On-Start",
+        description="Simple message to send once the render has started.",
+        default="Render started."
+    )
+    third_party_simple_first_message: StringProperty( #type: ignore
+        name="Third-party webhook On-First",
+        description="Simple message to send once the first frame has rendered.",
+        default="First Frame Rendered."
+    )
+    third_party_simple_completion_message: StringProperty( #type: ignore
+        name="Third-party webhook On-Completion",
+        description="Simple message to send on the once the render completed.",
+        default="Render Completed."
+    )
+    third_party_simple_cancel_message: StringProperty( #type: ignore
+        name="Third-party webhook On-Cancel",
+        description="Simple message to send on render cancellation.",
+        default="Render Canceled."
+    )
     
     # Drawing UI for addon preferences
     def draw(self, context):
         layout = self.layout
-        layout.label(text="Setup notifications")
+        layout.label(text="Setup Notifications")
         
         ## Desktop ##
         desktop_box = layout.box()
         row = desktop_box.row()
-        desktop_box.label(text="Desktop notifications")
+        desktop_box.label(text="Desktop Notifications")
         row = desktop_box.row()
         row.label(text="Custom Sound:")
-        row.prop(self, "custom_sound", text="",placeholder="cutom_sound.wav")
+        row.prop(self, "custom_sound", text="",placeholder="custom_sound.wav")
         row = desktop_box.row()
-        row.label(text="Sound path:")
+        row.label(text="Sound Path:")
         row.prop(self, "desktop_sound_path", text="")
         
         ## Discord ##
         discord_box = layout.box()
         row = discord_box.row()
-        discord_box.label(text="Discord notifications")
+        discord_box.label(text="Discord Notifications")
         row = discord_box.row()
-        row.label(text="Discord channel webhook name:")
+        row.label(text="Discord Channel Webhook Name:")
         row.prop(self, "discord_webhook_name", text="")
         row = discord_box.row()
-        row.label(text="Discord channel webhook url:")
+        row.label(text="Discord Channel Webhook url:")
         row.prop(self, "discord_webhook_url", text="")
         row = discord_box.row()
-        row.label(text="Default temporary save location:")
+        row.label(text="Default Temporary Save Location:")
         row.prop(self, "tmp_output_path", text="")
 
         ## Third-party Webhook ##
         third_party_webhook_box = layout.box()
         row = third_party_webhook_box.row()
-        third_party_webhook_box.label(text="Third-party webhook notifications")
+        third_party_webhook_box.label(text="Third-party Webhook Notifications")
         row = third_party_webhook_box.row()
-        row.label(text="Third-party webhook url:")
+        row.label(text="Third-party Webhook url:")
         row.prop(self, "third_party_webhook_url", text="")
+        
+        # simple messages #
+        third_party_webhook_box.label(text="")
+        row = third_party_webhook_box.row()
+        third_party_webhook_box.label(text="Send Simplified Webhook Notifications")
+        
+        # on every frame
+        row = third_party_webhook_box.row()
+        row.label(text="Message On Every Frame Rendered:")
+        row.prop(self, "third_party_simple_every_frame_message", text="")
+        # on render start
+        row = third_party_webhook_box.row()
+        row.label(text="Message On Render Start:")
+        row.prop(self, "third_party_simple_start_message", text="")
+        # on first frame
+        row = third_party_webhook_box.row()
+        row.label(text="Message On First Frame Rendered:")
+        row.prop(self, "third_party_simple_first_message", text="")
+        # on render completion
+        row = third_party_webhook_box.row()
+        row.label(text="Message On Render Completion:")
+        row.prop(self, "third_party_simple_completion_message", text="")
+        # on render cancel
+        row = third_party_webhook_box.row()
+        row.label(text="Message On Render Cancellation:")
+        row.prop(self, "third_party_simple_cancel_message", text="")
+        
 
 # Update function for webhook settings
 def update_third_party_webhook_every_frame(self, context):
@@ -140,8 +192,15 @@ def update_third_party_webhook_every_frame(self, context):
     self.third_party_webhook_cancel = state
 
 # Define a property group to hold the render notifications properties
-class RenderNotificationsProperties(PropertyGroup):
-    #desktop nitifications
+class Render_Notifications_Properties(PropertyGroup):
+    #enable notifications
+    enable_notifications: bpy.props.BoolProperty(
+        name="Enable notifications",  # This will appear as the checkbox label
+        description="Enable render notifications.",
+        default=False
+    ) # type: ignore
+    
+    #desktop notifications
     desktop_start: bpy.props.BoolProperty(
         name="Desktop notify on start",
         description="Send desktop notifications when the render job starts.",
@@ -165,13 +224,13 @@ class RenderNotificationsProperties(PropertyGroup):
     
     #discord notifications
     discord_preview: bpy.props.BoolProperty(
-        name="Desktop notify with preview",
-        description="Send the first and final frame to discord for an animation job, or a still image when a still render job is complete complete. Note: the default save location for the preview is set in the addon prefrences. if the output extention is openEXR or the size of the frame/still is larger than discord's allowed attachment size (with or without nitro), no preview will be sent.",
+        name="Discord notify with preview",
+        description="Send the first and final frame to discord for an animation job, or a still image when a still render job is complete complete. Note: the default save location for the preview is set in the addon preferences. if the output extension is openEXR or the size of the frame/still is larger than discord's allowed attachment size (with or without nitro), no preview will be sent.",
         default=False  # Starts unchecked
     ) # type: ignore
     use_custom_preview_path: bpy.props.BoolProperty(
-        name="Use cutsom preview path",
-        description="Use a custom path for the previewed renders that are sent to discord. Note: the default save location for the preview is set in the addon prefrences and will be used if this is unchecked.",
+        name="Use custom preview path",
+        description="Use a custom path for the previewed renders that are sent to discord. Note: the default save location for the preview is set in the addon preferences and will be used if this is unchecked.",
         default=False  # Starts unchecked
     ) # type: ignore
     discord_preview_path: bpy.props.StringProperty( #type: ignore
@@ -185,8 +244,8 @@ class RenderNotificationsProperties(PropertyGroup):
     
     #Third-party webhook notifications
     third_party_webhook_every_frame: bpy.props.BoolProperty(
-        name="Third-party webhook notify on everyframe",
-        description="Send third-party webhook notifications on everyframe.",
+        name="Third-party webhook notify on every frame",
+        description="Send third-party webhook notifications on every frame.",
         default=False,  # Starts unchecked
         update=update_third_party_webhook_every_frame
     ) # type: ignore
@@ -195,7 +254,6 @@ class RenderNotificationsProperties(PropertyGroup):
         description="Send third-party webhook notifications when the render job starts.",
         default=False  # Starts unchecked
     ) # type: ignore
-
     third_party_webhook_first: bpy.props.BoolProperty(
         name="Third-party webhook notify on first",
         description="Send third-party webhook notifications when the first frame has rendered.",
@@ -211,6 +269,50 @@ class RenderNotificationsProperties(PropertyGroup):
         description="Send third-party webhook notifications when the render job is canceled.",
         default=False  # Starts unchecked
     )# type: ignore
+    
+    # simple message
+    simple_message: bpy.props.BoolProperty(
+        name="simple message",
+        description="Send a simple message on each render stage (start, first frame, completion and cancel)",
+        default=False  # Starts unchecked
+    )# type: ignore
+    # send simplified render data
+    simple_render_data: bpy.props.BoolProperty(
+        name="simplified render data",
+        description="attach simplified render data to simplified notifications. Data sent: project name, job type, total frames, frame range, first frame time, render time and est. render time.",
+        default=False  # Starts unchecked
+    )# type: ignore
+    # use custom message payload
+    custom_message: bpy.props.BoolProperty(
+        name="Custom simple message",
+        description="Set custom message for each render stage. By default, it uses the messages set in the addon preferences.",
+        default=False  # Starts unchecked
+    )# type: ignore
+    on_every: bpy.props.StringProperty( #type: ignore
+        name="On Every Frame",
+        description="Simple message to send each time a frame is rendered on every frame render besides start, first, completion and cancel.",
+        default = ""
+    )
+    on_start: bpy.props.StringProperty( #type: ignore
+        name="On start",
+        description="Simple message to send once the render has started.",
+        default = ""
+    )
+    on_first_frame: bpy.props.StringProperty( #type: ignore
+        name="On first frame",
+        description="Simple message to send once the first frame has rendered.",
+        default = ""
+    )
+    on_completion: bpy.props.StringProperty( #type: ignore
+        name="On completion",
+        description="Simple message to send on the once the render completed.",
+        default = ""
+    )
+    on_cancel: bpy.props.StringProperty( #type: ignore
+        name="On cancel",
+        description="Simple message to send on render cancellation.",
+        default = ""
+    )
     
     
     # Desktop, Discord and third-party Webhook toggle properties
@@ -228,66 +330,161 @@ class RenderNotificationsProperties(PropertyGroup):
 
     is_third_party_webhook: bpy.props.BoolProperty(
         name="third-party webhook notifications",  # This will appear as the checkbox label
-        description="Enable third-party third-party webhook notifications.",
+        description="Enable third-party webhook notifications.",
+        default=False
+    )# type: ignore
+    is_simple_third_party_webhook: bpy.props.BoolProperty(
+        name="simplified third-party webhook notifications",  # This will appear as the checkbox label
+        description="Enable simplified third-party webhook notifications instead of a raw json payload.",
         default=False
     )# type: ignore
 
-# create UI elaments for addon properties in the render properties tab
-class RenderNotificationsRenderPanel(Panel):
-    """Creates a notifications panel in the render properties tab"""
-    bl_label = "Notifications"
-    bl_idname = "RENDER_PT_Notifications"
+class RenderNotificationsPanel:
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "render"
-    bl_parent_id = "RENDER_PT_context"
+
+# create UI elements for addon properties in the render properties tab
+class RENDER_PT_Notifications(RenderNotificationsPanel, Panel):
+    """Creates a notifications panel in the render properties tab"""
+    bl_label = "Render Notifications"
+    bl_idname = "RENDER_PT_Notifications"
+    
+    def draw_header(self,context):
+        scene = context.scene
+        props = scene.render_panel_props
+        layout = self.layout
+        layout.prop(props, "enable_notifications", text="", icon="INTERNET") 
 
     # Drawing addon UI in the render properties panel
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        props = scene.render_panel_props  # Access our custom property
+        props = scene.render_panel_props 
+        layout.enabled = props.enable_notifications
+
+class RENDER_PT_Desktop_Notifications(RenderNotificationsPanel, Panel):
+    bl_label = "Desktop Notifications"
+    bl_parent_id = "RENDER_PT_Notifications"
+    bl_options = {'DEFAULT_CLOSED'}
+    
+    def draw_header(self,context):
+        scene = context.scene
+        props = scene.render_panel_props
+        layout = self.layout
+        layout.enabled = props.enable_notifications
+        layout.prop(props, "is_desktop", text="") 
+    
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+        props = scene.render_panel_props 
+        layout.enabled = props.is_desktop and props.enable_notifications
         
-        # nitification properties for each notification type
-        desktop_box = layout.box()
-        row = desktop_box.row(align=True)
-        row.prop(props, "is_desktop", text="")  # Checkbox (no extra text)
-        row.prop(props, "is_desktop", text="Desktop Notifications", emboss=False, toggle=True,icon='WORLD_DATA')  # Label with dropdown effect
+        # notification properties for desktop notifications
+        #desktop_box = layout.box()
         
-        discord_box = layout.box()
-        row = discord_box.row(align=True)
-        row.prop(props, "is_discord", text="")  # Checkbox (no extra text)
-        row.prop(props, "is_discord", text="Discord Notifications", emboss=False, toggle=True,icon='WORLD_DATA')  # Label with dropdown effect
-        
-        third_party_webhook_box = layout.box()
-        row = third_party_webhook_box.row(align=True)
-        row.prop(props, "is_third_party_webhook", text="")  # Checkbox (no extra text)
-        row.prop(props, "is_third_party_webhook", text="third-party webhook notifications", emboss=False, toggle=True,icon='WORLD_DATA')  # Label with dropdown effect
-        
-        # If checkbox is enabled, show additional settings for each notification type
-        if props.is_desktop:
-            desktop_col = desktop_box.column()
-            desktop_col.label(text="Configure Notifications:")
-            desktop_col.prop(props, "desktop_start", text="notify on start")
-            desktop_col.prop(props, "desktop_first", text="notify on first")
-            desktop_col.prop(props, "desktop_completion", text="notify on completion")
-            desktop_col.prop(props, "desktop_cancel", text="notify on cancel")
+        # If checkbox is enabled, show additional settings for desktop notifications
+        desktop_col = layout.column()
+        desktop_col.label(text="Configure Desktop Notifications:")
+        desktop_col.prop(props, "desktop_start", text="Notify On Start")
+        desktop_col.prop(props, "desktop_first", text="Notify On First")
+        desktop_col.prop(props, "desktop_completion", text="Notify On Completion")
+        desktop_col.prop(props, "desktop_cancel", text="Notify On Cancel")
             
-        if props.is_discord:
-            discord_col = discord_box.column()
-            discord_col.label(text="Configure Notifications:")
-            discord_col.prop(props, "discord_preview", text="Send previews")
-            discord_col.prop(props, "use_custom_preview_path", text="Use custom preview path")
-            discord_col.prop(props, "discord_preview_path", text="Previews save location") 
+class RENDER_PT_Discord_Notifications(RenderNotificationsPanel, Panel):
+    bl_label = "Discord Notifications"
+    bl_parent_id = "RENDER_PT_Notifications"
+    bl_options = {'DEFAULT_CLOSED'}
+    
+    def draw_header(self,context):
+        scene = context.scene
+        props = scene.render_panel_props
+        layout = self.layout
+        layout.enabled = props.enable_notifications
+        layout.prop(props, "is_discord", text="") 
+    
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+        props = scene.render_panel_props 
+        layout.enabled = props.is_discord and props.enable_notifications
         
-        if props.is_third_party_webhook:
-            third_party_webhook_col = third_party_webhook_box.column()
-            third_party_webhook_col.label(text="Configure Notifications:")
-            third_party_webhook_col.prop(props, "third_party_webhook_every_frame", text="notify on everyframe")
-            third_party_webhook_col.prop(props, "third_party_webhook_start", text="notify on start")
-            third_party_webhook_col.prop(props, "third_party_webhook_first", text="notify on first")
-            third_party_webhook_col.prop(props, "third_party_webhook_completion", text="notify on completion")
-            third_party_webhook_col.prop(props, "third_party_webhook_cancel", text="notify on cancel")
+        # notification properties for discord notifications
+        #discord_box = layout.box()
+        discord_col = layout.column()
+        discord_col.label(text="Configure Discord Notifications:")
+        discord_col.prop(props, "discord_preview", text="Send Previews")
+        discord_col.prop(props, "use_custom_preview_path", text="Use Custom Preview Path")
+        discord_col.prop(props, "discord_preview_path", text="Previews Save Location") 
+
+class RENDER_PT_Webhook_Notifications(RenderNotificationsPanel, Panel):
+    bl_label = "Third Party Webhook Notifications"
+    bl_parent_id = "RENDER_PT_Notifications"
+    bl_options = {'DEFAULT_CLOSED'}
+    
+    def draw_header(self,context):
+        scene = context.scene
+        props = scene.render_panel_props
+        layout = self.layout
+        layout.enabled = props.enable_notifications
+        layout.prop(props, "is_third_party_webhook", text="") 
+    
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+        props = scene.render_panel_props 
+        layout.enabled = props.is_third_party_webhook and props.enable_notifications
+        
+        # notification properties for webhook notifications
+        #third_party_webhook_box = layout.box()
+        
+        third_party_webhook_col = layout.column()
+        third_party_webhook_col.label(text="Configure Third-party Notifications:")
+        third_party_webhook_col.prop(props, "third_party_webhook_every_frame", text="Notify On Every Frame")
+        third_party_webhook_col.prop(props, "third_party_webhook_start", text="Notify On Start")
+        third_party_webhook_col.prop(props, "third_party_webhook_first", text="Notify On First")
+        third_party_webhook_col.prop(props, "third_party_webhook_completion", text="Notify On Completion")
+        third_party_webhook_col.prop(props, "third_party_webhook_cancel", text="Notify On Cancel")
+
+class RENDER_PT_Simplified_Webhook_Notifications(RenderNotificationsPanel, Panel):
+    bl_label = "Simplified Notifications"
+    bl_parent_id = "RENDER_PT_Webhook_Notifications"
+    bl_options = {'DEFAULT_CLOSED'}
+    
+    def draw_header(self,context):
+        scene = context.scene
+        props = scene.render_panel_props
+        layout = self.layout
+        layout.enabled = props.enable_notifications and props.is_third_party_webhook
+        layout.prop(props, "is_simple_third_party_webhook", text="") 
+    
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+        props = scene.render_panel_props 
+        layout.enabled = props.is_simple_third_party_webhook and props.enable_notifications and props.is_third_party_webhook
+        
+        # notification properties for simplified webhook notifications
+        #third_party_webhook_box = layout.box()
+        
+        third_party_webhook_col = layout.column()
+        third_party_webhook_col.label(text="Configure Simplified Notifications:")
+        third_party_webhook_col.prop(props, "simple_render_data", text="Attach Simplified Render Data")
+        third_party_webhook_col.prop(props, "custom_message", text="Custom Messages")
+        third_party_webhook_col.prop(props, "on_every", text="Every Frame")
+        third_party_webhook_col.prop(props, "on_start", text="Start")
+        third_party_webhook_col.prop(props, "on_first_frame", text="First Frame")
+        third_party_webhook_col.prop(props, "on_completion", text="Completion")
+        third_party_webhook_col.prop(props, "on_cancel", text="Cancel")
 
 
 # RenderNotifier class to handle the rendering notifications logic
@@ -311,6 +508,8 @@ class RenderNotifier:
         self.counter = 0
         self.precountdown = 0.0
         self.message_id = None
+        
+        self.frame_step = 1
         
         self.file = None
         self.no_preview = False
@@ -341,10 +540,6 @@ class RenderNotifier:
         self.is_response_received = False
         
         self.p = None
-        
-        #self.still_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
-        #self.first_frame_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
-        #self.animation_embed = DiscordEmbed(type="rich", color=discord.Color.blue())
     
     # reset variables on render initialization
     # this is called when the render job starts
@@ -358,7 +553,6 @@ class RenderNotifier:
         self.RENDER_FIRST_FRAME = None
         self.RENDER_CURRENT_FRAME = None
         self.RENDER_CANCELLED_TIME = None
-        self.total_frames = 0
         self.average_time = 0
         self.job_type = ""
         self.blender_data = {}
@@ -401,7 +595,7 @@ class RenderNotifier:
                 print(f"Skipping frame {current_frame} ({self.skip_frame_counter}/{self.skip_frame})")
                 return
             elif self.skip_frame_counter == self.skip_frame and self.is_skip_frame:
-                print(f"stop skiiping frames: frame {current_frame} ({self.skip_frame_counter}/{self.skip_frame})")
+                print(f"stop skipping frames: frame {current_frame} ({self.skip_frame_counter}/{self.skip_frame})")
                 self.skip_frame_counter = 0
                 self.is_skip_frame = False
                 #return
@@ -482,7 +676,7 @@ class RenderNotifier:
                 print(f"Error closing subprocess: {e}")
             print(f"✅ Successfully ran writing subprocess in {time.time() - start_timer} seconds")
         except Exception as e:
-            print(f"⚠️ Error occurred while running writing subproccess: {e}")
+            print(f"⚠️ Error occurred while running writing subprocess: {e}")
 
     # Handle render logic
     @persistent
@@ -503,10 +697,15 @@ class RenderNotifier:
         self.blender_data['render_start_countdown'] = self.render_start_countdown = time.time()
         
         self.total_frames = bpy.context.scene.frame_end - bpy.context.scene.frame_start + 1
+        self.frame_step  = bpy.context.scene.frame_step if bpy.context.scene.frame_step > 0 else 1
+        #self.total_frames = self.total_frames / self.frame_step
         
         self.blender_data["call_type"] = "render_init"
         self.blender_data["project_name"] = self.blend_filename
         self.blender_data["total_frames"] = self.total_frames
+        self.blender_data["total_frames_stepped"] = round(self.total_frames / self.frame_step)
+        self.blender_data["frame_step"] = self.frame_step
+        self.blender_data["is_frame_step"] = True if self.frame_step > 1 else False
         
         ## Desktop ##
         self.is_custom_sound = bpy.context.preferences.addons[addon_name].preferences.custom_sound
@@ -545,7 +744,6 @@ class RenderNotifier:
             # Use sys.executable and the addon path to ensure we run the project's sub.py
             addon_dir = os.path.dirname(__file__)
             discord_process = os.path.join(addon_dir, "discord_process.py")
-            #print("Addon directory:", discord_process)
             
             # Parent process environment variables
             parent_env = os.environ.copy()
@@ -571,6 +769,34 @@ class RenderNotifier:
         self.third_party_webhook_first = bpy.context.scene.render_panel_props.third_party_webhook_first
         self.third_party_webhook_completion = bpy.context.scene.render_panel_props.third_party_webhook_completion
         self.third_party_webhook_cancel = bpy.context.scene.render_panel_props.third_party_webhook_cancel
+        
+        self.is_simple_third_party_webhook = bpy.context.scene.render_panel_props.is_simple_third_party_webhook
+        self.is_third_party_simple_render_data = bpy.context.scene.render_panel_props.simple_render_data
+        self.is_third_party_custom_message = bpy.context.scene.render_panel_props.custom_message
+        
+        # default to preferences messages
+        self.third_party_on_every = bpy.context.preferences.addons[addon_name].preferences.third_party_simple_every_frame_message
+        self.third_party_on_start = bpy.context.preferences.addons[addon_name].preferences.third_party_simple_start_message
+        self.third_party_on_first_frame = bpy.context.preferences.addons[addon_name].preferences.third_party_simple_first_message
+        self.third_party_on_completion = bpy.context.preferences.addons[addon_name].preferences.third_party_simple_completion_message
+        self.third_party_on_cancel = bpy.context.preferences.addons[addon_name].preferences.third_party_simple_cancel_message
+        
+        # if custom messages aren't empty
+        if self.is_third_party_custom_message:
+            if not bpy.context.scene.render_panel_props.on_start == "":
+                self.third_party_on_every = bpy.context.scene.render_panel_props.on_every
+                
+            if not bpy.context.scene.render_panel_props.on_start == "":
+                self.third_party_on_start = bpy.context.scene.render_panel_props.on_start
+                
+            if not bpy.context.scene.render_panel_props.on_first_frame == "":
+                self.third_party_on_first_frame = bpy.context.scene.render_panel_props.on_first_frame
+                
+            if not bpy.context.scene.render_panel_props.on_completion == "":
+                self.third_party_on_completion = bpy.context.scene.render_panel_props.on_completion
+                
+            if not bpy.context.scene.render_panel_props.on_cancel == "":
+                self.third_party_on_cancel = bpy.context.scene.render_panel_props.on_cancel
 
     # Handle render pre logic render_start_countdown
     @persistent
@@ -587,7 +813,7 @@ class RenderNotifier:
             self.blender_data["job_type"] = self.job_type
             self.blender_data["frame"] = bpy.context.scene.frame_current
             self.blender_data["frame_range"] = f"{bpy.context.scene.frame_start} - {bpy.context.scene.frame_end}"
-            self.blender_data["Total_frames_to_render"] = self.total_frames
+            self.blender_data["Total_frames_to_render"] = self.total_frames / self.frame_step
             print(f"Current frame: {self.current_frame} {self.blender_data['frame']} {bpy.context.scene.frame_current}")    
             
             if self.is_discord:
@@ -620,7 +846,6 @@ class RenderNotifier:
                     title="Render started", 
                     message="Render job started for: " + self.blender_data["project_name"]
                     )
-        #print(f"Render job type: {self.job_type}")
         
     # Handle render post logic
     @persistent   
@@ -632,6 +857,7 @@ class RenderNotifier:
         self.current_frame = scene.frame_current
         current_frame = scene.frame_current
         is_first_frame = self.current_frame == scene.frame_start
+        stepped_frames = self.total_frames / self.frame_step
         
         try:
             if self.is_animation:
@@ -647,7 +873,7 @@ class RenderNotifier:
                     # Estimate average time per frame and total job duration
                     self.precountdown = time.time() - self.render_start_countdown
                     self.current_frame_time = self.precountdown
-                    self.countdown = int(time.time() + self.precountdown * (self.total_frames - self.counter))
+                    self.countdown = int(time.time() + self.precountdown * (stepped_frames - self.counter))
                     self.current_countdown = int(time.time() + self.precountdown)
                     self.precountdown = time.time()
                     
@@ -658,10 +884,10 @@ class RenderNotifier:
                     # Populate render info for sending to Discord or display
                     self.blender_data["frame"] = current_frame
                     self.blender_data["RENDER_FIRST_FRAME"] = str(self.RENDER_FIRST_FRAME)[:-4]
-                    self.blender_data["est_render_job"] = str(self.RENDER_FIRST_FRAME * (self.total_frames - self.counter))[:-4]
-                    self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
+                    self.blender_data["est_render_job"] = str(self.RENDER_FIRST_FRAME * (stepped_frames - self.counter))[:-4]
+                    self.blender_data["frames_left"] = f"{stepped_frames - self.counter}"
                     self.blender_data["frames_rendered"] = self.counter
-                    self.blender_data["rendered_frames_percentage"] = round((self.counter / self.total_frames * 100),2)
+                    self.blender_data["rendered_frames_percentage"] = round((self.counter / stepped_frames * 100),2)
                     self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
                     self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
                     
@@ -714,7 +940,7 @@ class RenderNotifier:
                         # Time per frame and ETA calculations
                         self.precountdown = time.time() - self.precountdown
                         self.current_frame_time = self.precountdown
-                        self.countdown = int(time.time() + self.precountdown * (self.total_frames - self.counter))
+                        self.countdown = int(time.time() + self.precountdown * (stepped_frames - self.counter))
                         self.current_countdown = int(time.time() + self.precountdown)
                         self.counter += 1
                         self.RENDER_CURRENT_FRAME = datetime.now() - self.RENDER_PRE_TIME
@@ -723,17 +949,17 @@ class RenderNotifier:
                         self.precountdown = time.time()
                         
                         # Estimate remaining time
-                        if self.total_frames != self.counter:
-                            self.blender_data["est_render_job"] = str(self.RENDER_CURRENT_FRAME * (self.total_frames - self.counter))[:-4]
+                        if stepped_frames != self.counter:
+                            self.blender_data["est_render_job"] = str(self.RENDER_CURRENT_FRAME * (stepped_frames - self.counter))[:-4]
                         else:
-                            self.blender_data["est_render_job"] = str(self.RENDER_CURRENT_FRAME * (self.total_frames - self.counter + 1))[:-4]
+                            self.blender_data["est_render_job"] = str(self.RENDER_CURRENT_FRAME * (stepped_frames - self.counter + 1))[:-4]
                             
                         # Update per-frame render data
                         self.blender_data["frame"] = current_frame
                         self.blender_data["RENDER_CURRENT_FRAME"] = str(self.RENDER_CURRENT_FRAME)[:-4]
-                        self.blender_data["frames_left"] = f"{self.total_frames - self.counter}"
+                        self.blender_data["frames_left"] = f"{stepped_frames - self.counter}"
                         self.blender_data["frames_rendered"] = self.counter
-                        self.blender_data["rendered_frames_percentage"] = round((self.counter / self.total_frames * 100),2)
+                        self.blender_data["rendered_frames_percentage"] = round((self.counter / stepped_frames * 100),2)
                         self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
                         self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
                         
@@ -760,9 +986,9 @@ class RenderNotifier:
                 self.blender_data["average_time"] = str(self.average_time)[:-4]
                 
                 if self.is_third_party_webhook and is_first_frame and self.third_party_webhook_first:
-                    self.send_third_party_webhook()
+                    self.send_third_party_webhook(stage=1)
                 elif self.third_party_webhook_every_frame:
-                    self.send_third_party_webhook()
+                    self.send_third_party_webhook(stage=4)
                 
                 if self.is_desktop and is_first_frame and self.desktop_first:
                     self.notify_desktop(
@@ -772,7 +998,6 @@ class RenderNotifier:
         except Exception as e:
             print(f"Error in render post logic: {e}")
             print(self.counter)
-        #print("Render Post Logic Completed")
         
     # check if rendering frame is the first frame in the timeline
     @persistent
@@ -801,8 +1026,6 @@ class RenderNotifier:
         self.RENDER_TOTAL_TIME = datetime.now() - self.RENDER_START_TIME
         self.blender_data["call_type"] = "complete"
         self.blender_data["total_time_elapsed"] = str(self.RENDER_TOTAL_TIME)[:-4]
-        
-        #print(f"discord_preview: {self.discord_preview}")
         
         # Detect if the render was a still frame (only one frame rendered)
         if self.current_frame == scene.frame_start:
@@ -846,7 +1069,7 @@ class RenderNotifier:
         if self.is_animation:
             # Update metadata
             self.blender_data["average_time"] = str(self.average_time)[:-4]
-            self.blender_data["total_Est_time"] = str(self.RENDER_FIRST_FRAME * self.total_frames)[:-4]
+            self.blender_data["total_Est_time"] = str(self.RENDER_FIRST_FRAME * (self.total_frames / self.frame_step))[:-4]
             
         if self.discord_preview and self.is_discord:
             bpy.app.timers.register(delayed_save, first_interval=0.2)
@@ -855,7 +1078,7 @@ class RenderNotifier:
                 self.send_webhook_non_blocking(finished=True,blender_data=self.blender_data)
         
         if self.is_third_party_webhook and self.third_party_webhook_completion:
-            self.send_third_party_webhook()
+            self.send_third_party_webhook(stage=2)
             
         if self.is_desktop and self.desktop_completion:
             self.notify_desktop(
@@ -933,7 +1156,7 @@ class RenderNotifier:
             self.blender_data["current_frame"] = cancel_frame
             self.blender_data["total_frames_rendered"] = bpy.context.scene.frame_end - cancel_frame
             self.blender_data["frames_still_to_render_range"] = f"{cancel_frame} - {bpy.context.scene.frame_end}"
-            self.blender_data["frames_still_to_render"] = f"{bpy.context.scene.frame_end - self.current_frame}"
+            self.blender_data["frames_still_to_render"] = f"{round((bpy.context.scene.frame_end - self.current_frame) / self.frame_step)}"
             
         if self.discord_preview and self.is_discord:
             bpy.app.timers.register(delayed_save, first_interval=0.2)
@@ -941,7 +1164,7 @@ class RenderNotifier:
             self.send_webhook_non_blocking(canceled=True,blender_data=self.blender_data)
             
         if self.is_third_party_webhook and self.third_party_webhook_cancel:
-            self.send_third_party_webhook()
+            self.send_third_party_webhook(stage=3)
             
         if self.is_desktop and self.desktop_cancel:
             self.notify_desktop(
@@ -951,9 +1174,58 @@ class RenderNotifier:
 
     # Send JSON payload via third-party webhook to a server (e.g., Flask, Home Assistant, etc.)
     @persistent
-    def send_third_party_webhook(self):
+    def send_third_party_webhook(self,stage = 0,init=False, isfirstframe=False, finished=False, canceled=False):
         # Use the preconfigured self.third_party_webhook_url
-        payload = self.blender_data
+        step_frame = ""
+        if self.frame_step > 1:
+            step_frame = f"\nFrame Step: {self.blender_data['frame_step']}"
+        else:
+            step_frame = ""
+
+        
+        print(self.is_third_party_simple_render_data)
+        if self.is_simple_third_party_webhook:
+            match stage:
+                case 0: # start
+                    payload = self.third_party_on_start
+                    
+                    if self.is_third_party_simple_render_data and self.job_type == "Animation":
+                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['total_frames_stepped']}{step_frame}"
+                    elif self.is_third_party_simple_render_data:
+                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nFrame: {self.blender_data['frame']}"""
+                case 1: # first frame
+                    payload = self.third_party_on_first_frame
+                    
+                    if self.is_third_party_simple_render_data and self.job_type == "Animation":
+                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['total_frames_stepped']}{step_frame}\nFirst Frame Time: {self.blender_data['RENDER_FIRST_FRAME']}\nEst. Render Time: {self.blender_data['est_render_job']}"
+                case 2: # complete
+                    payload = self.third_party_on_completion
+                    
+                    if self.is_third_party_simple_render_data and self.job_type == "Animation":
+                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['total_frames_stepped']}{step_frame}\nFirst Frame Time: {self.blender_data['RENDER_FIRST_FRAME']}\nRender Time: {self.blender_data['total_time_elapsed']}\nEst. Render Time: {self.blender_data['total_Est_time']}"
+                    elif self.is_third_party_simple_render_data:
+                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nFrame: {self.blender_data['frame']}\nRender Time: {self.blender_data['total_time_elapsed']}"
+                case 3: # cancel
+                    payload = self.third_party_on_cancel
+                    
+                    if self.is_third_party_simple_render_data and self.job_type == "Animation":
+                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['total_frames_stepped']}{step_frame}\nFirst Frame Time: {self.blender_data['RENDER_FIRST_FRAME']}\nCancelled Frame: {self.blender_data['frame']}\nRender Time (cancelled): {self.blender_data['RENDER_CANCELLED_TIME']}"
+                    elif self.is_third_party_simple_render_data:
+                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nFrame: {self.blender_data['frame']}\nRender Time (cancelled): {self.blender_data['RENDER_CANCELLED_TIME']}"
+                case 4: # every frame
+                    payload = self.third_party_on_every
+                    
+                    if self.is_third_party_simple_render_data and self.job_type == "Animation":
+                        payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['total_frames_stepped']}{step_frame}\nFirst Frame Time: {self.blender_data['RENDER_FIRST_FRAME']}\nEst. Render Time: {self.blender_data['est_render_job']}"
+                
+            print(payload)
+        else:
+            blender_data = self.blender_data
+            blender_data.pop('discord_webhook_url', None)
+            blender_data.pop('discord_webhook_name', None)
+            blender_data.pop('discord_preview', None)
+            payload = blender_data
+            print(payload)
         import logging
 
         # Configure logging
@@ -984,7 +1256,7 @@ class RenderNotifier:
         if not title or not message:
             print("⚠️ Title or message is missing for desktop notification.")
             return
-        #print("\n Notifing via desktop \n")
+        #print("\n Notifying via desktop \n")
         desktop_notify = Notify()
         desktop_notify.title = title
         desktop_notify.message = message
@@ -1013,9 +1285,13 @@ notifier_instance = RenderNotifier()
 
 # List of classes to register
 classes = [
-    RenderNotificationsProperties, 
-    RenderNotificationsRenderPanel, 
-    RenderNotificationsPreferences
+    Render_Notifications_Properties, 
+    RENDER_PT_Notifications,
+    RENDER_PT_Desktop_Notifications,
+    RENDER_PT_Discord_Notifications,
+    RENDER_PT_Webhook_Notifications,
+    RenderNotificationsPreferences,
+    RENDER_PT_Simplified_Webhook_Notifications
 ]
 
 # Register all components and event handlers
@@ -1024,7 +1300,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.Scene.render_panel_props = bpy.props.PointerProperty(type=RenderNotificationsProperties)
+    bpy.types.Scene.render_panel_props = bpy.props.PointerProperty(type=Render_Notifications_Properties)
  
     bpy.app.handlers.render_init.append(notifier_instance.render_init)         # Called when render starts
     bpy.app.handlers.render_post.append(notifier_instance.render_post)         # Called after each frame is rendered
