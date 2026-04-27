@@ -10,9 +10,7 @@ website = "https://github.com/JimmyNos/Render-Notifications"
 tags = ["Render", "System"]
 blender_version_min = "4.3.2"
 
-license = [
-  "SPDX:GPL-3.0-or-later",
-]
+license = ["SPDX:GPL-3.0-or-later"]
 
 platforms = ["windows-x64"]
 wheels = [
@@ -63,5 +61,5 @@ paths_exclude_pattern = [
   "/.git/",
   "/*.zip",
   "resources/images/readme",
-  "Templates/"
+  "Templates/",
 ]
