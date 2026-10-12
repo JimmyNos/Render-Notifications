@@ -18,6 +18,7 @@ class DiscordProcessor:
         self.discord_preview = False
         self.no_preview = False
         self.no_first_preview = False
+        self.no_mid_preview = False
         self.file = None
         self.thumbfile = None
         self.file_path = None
@@ -26,6 +27,7 @@ class DiscordProcessor:
         self.attach = None
         self.thumb_attach = None
         self.first_attach = None
+        self.mid_attach = None
         self.still_attach = None
         
         self.is_step = False
@@ -86,6 +88,11 @@ class DiscordProcessor:
                     self.no_first_preview = self.blender_data.get('no_first_preview')
                 except KeyError:
                     self.no_first_preview = False
+                try:
+                    self.no_mid_preview = self.blender_data.get('no_mid_preview')
+                except KeyError:
+                    self.no_mid_preview = False
+                    
                 #await webhook.send(username="Blender Hook",content="test", wait=True)
                 try:
                     await self.send_or_update_embed(webhook, self.init, self.frame, self.finished, self.canceled)
@@ -240,6 +247,23 @@ class DiscordProcessor:
                 except Exception as e:
                     print(f"An error occurred in en_post A1: {e}")
             else:
+                if self.discord_preview and not self.no_mid_preview:
+                    try:
+                        if os.path.isfile(self.blender_data.get('final_mid_path')):
+                            self.file_path = self.blender_data.get('final_mid_path')
+                            self.attach = "mid_render.png"
+                            if not self.no_first_preview:
+                                if os.path.isfile(self.blender_data.get('final_first_path')):
+                                    self.thumb_path = self.blender_data.get('final_first_path')
+                                    self.thumb_attach = "first_render.png"
+                                    self.animation_embed.set_thumbnail(url="attachment://" + self.thumb_attach)
+                            self.animation_embed.set_image(url="attachment://" + self.attach)
+                        else:
+                            self.no_preview = None
+                            
+                    except Exception as e:
+                        print(f"Error occurred while setting thumbnail for first frame in en_post: {e}")
+                        
                 try:
                     self.animation_embed.set_field_at(index=3,name="Frame", value=self.blender_data.get('frame'), inline=False)
                     self.animation_embed.set_field_at(index=4,name="frames rendered", value=self.frames_rendered_field, inline=True)
@@ -343,7 +367,7 @@ class DiscordProcessor:
                     self.animation_embed.set_footer(text="[X_ X)")
                     self.animation_embed.colour=discord.Colour.red()
                 else:
-                    #run if canceled before frist frame starts rendering
+                    #run if canceled before first frame starts rendering
                     self.animation_embed.description += "\nCanceled" if not self.no_preview else "\nCanceled (no preview available)"
                     self.animation_embed.set_field_at(index=3,name="Frame", value=self.blender_data.get('current_frame'), inline=True)
                     self.animation_embed.add_field(name="Still to render", value="("+str(self.blender_data.get('frames_still_to_render'))+"/"+str(self.blender_data.get('total_frames_stepped'))+")", inline=False)
@@ -435,7 +459,7 @@ class DiscordProcessor:
         async def edit_animation(has_attch = False):
             def _build_animation_attachments():
                 attachments = []
-                if has_attch and not self.no_first_preview and getattr(self, 'file_path', None) and os.path.isfile(self.file_path):
+                if has_attch and not self.no_first_preview and not self.no_mid_preview and getattr(self, 'file_path', None) and os.path.isfile(self.file_path):
                     attachments.append(discord.File(self.file_path, filename=self.attach))
                     
                 if has_attch and not self.no_first_preview and getattr(self, 'thumb_path', None) and os.path.isfile(self.thumb_path):
@@ -469,9 +493,14 @@ class DiscordProcessor:
                 else:
                     await webhook.edit_message(self.message_id, embed=self.animation_embed)
             else:
-                await webhook.edit_message(self.message_id, embed=self.animation_embed)
+                attachments = _build_animation_attachments()
+                if attachments:
+                    await webhook.edit_message(self.message_id, embed=self.animation_embed, attachments=attachments)
+                else:
+                    await webhook.edit_message(self.message_id, embed=self.animation_embed)
+                #await webhook.edit_message(self.message_id, embed=self.animation_embed)
         
-        # Hanlde sending this discord webhook message
+        # Handle sending this discord webhook message
         if self.message_id:
             # If message_id is set, edit the existing message
             try:
@@ -482,7 +511,7 @@ class DiscordProcessor:
                         try:
                             await edit_animation(True)
                         except Exception as e:
-                            # If the embed is too large or an error is cought, it try to send it without the image
+                            # If the embed is too large or an error is caught, it try to send it without the image
                             print(f"Error occurred while embedding image in Discord webhook: {e}. This might be due to file size limitations or an invalid file path. (possiable fix: try reloading blender)")
                             self.animation_embed.description+= "\n Render too large for preview or failed to save."
                             await edit_animation()

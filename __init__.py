@@ -228,6 +228,18 @@ class Render_Notifications_Properties(PropertyGroup):
         description="Send the first and final frame to discord for an animation job, or a still image when a still render job is complete complete. Note: the default save location for the preview is set in the addon preferences. if the output extension is openEXR or the size of the frame/still is larger than discord's allowed attachment size (with or without nitro), no preview will be sent.",
         default=False  # Starts unchecked
     ) # type: ignore
+    #discord notifications
+    discord_jpg_preview: bpy.props.BoolProperty(
+        name="Discord notify with JPG preview",
+        description="Save the render as a JPG and send it to discord.",
+        default=False  # Starts unchecked
+    ) # type: ignore
+    #discord notifications
+    discord_preview_every_frame: bpy.props.BoolProperty(
+        name="Discord notify with preview on every frame",
+        description="Send a preview of each frame to discord for an animation job.",
+        default=False  # Starts unchecked
+    ) # type: ignore
     use_custom_preview_path: bpy.props.BoolProperty(
         name="Use custom preview path",
         description="Use a custom path for the previewed renders that are sent to discord. Note: the default save location for the preview is set in the addon preferences and will be used if this is unchecked.",
@@ -419,6 +431,9 @@ class RENDER_PT_Discord_Notifications(RenderNotificationsPanel, Panel):
         discord_col = layout.column()
         discord_col.label(text="Configure Discord Notifications:")
         discord_col.prop(props, "discord_preview", text="Send Previews")
+        discord_col.prop(props, "discord_jpg_preview", text="Send JPG Previews")
+        discord_col.prop(props, "discord_preview_every_frame", text="Preview All Frames")
+        
         discord_col.prop(props, "use_custom_preview_path", text="Use Custom Preview Path")
         discord_col.prop(props, "discord_preview_path", text="Previews Save Location") 
 
@@ -526,16 +541,20 @@ class RenderNotifier:
         self.tmp_output_path = ""
         self.final_path = ""
         self.first_rendered_frame_path = ""
+        self.mid_rendered_frame_path = ""
         self.final_first_path = ""
+        self.final_mid_path = ""
         self.tmp_output_name = ""
-        self.tmp_output_name_frist = ""
+        self.tmp_output_name_first = ""
+        self.tmp_output_name_mid = ""
         
         self.is_less_than = False
         self.is_skip_frame = False
         self.skip_frame = 0
         self.skip_frame_counter = 0
         
-        self.isfirst_frame = False
+        self.is_first_frame = False
+        self.is_mid_frame = False
         
         self.is_response_received = False
         
@@ -561,10 +580,10 @@ class RenderNotifier:
         self.precountdown = 0.0
         
         self.tmp_output_name = ""
-        self.tmp_output_name_frist = ""
+        self.tmp_output_name_first = ""
 
     # handle discord webhook using a separate thread-safe event loop
-    def send_webhook_non_blocking(self, init=False, frame=False,isfirstframe=False, finished=False, canceled=False,blender_data=None):
+    def send_webhook_non_blocking(self, init=False, frame=False,isfirstframe=False,ismidframe=False, finished=False, canceled=False,blender_data=None):
         current_frame_time = getattr(self, 'current_frame_time', 0.0)
         current_frame = self.current_frame
         is_last_frame = current_frame == self.total_frames
@@ -691,7 +710,8 @@ class RenderNotifier:
         self.blend_filename = os.path.basename(self.blend_filepath) if self.blend_filepath else "Untitled.blend"
         self.blend_filename = self.blend_filename[:-6] # slice off the .blend extension
         self.tmp_output_name = self.blend_filename
-        self.tmp_output_name_frist = self.blend_filename + " first frame"
+        self.tmp_output_name_first = self.blend_filename + " first frame"
+        self.tmp_output_name_mid = self.blend_filename + " mid frame"
         
         self.RENDER_START_TIME = datetime.now()
         self.blender_data['render_start_countdown'] = self.render_start_countdown = time.time()
@@ -707,10 +727,12 @@ class RenderNotifier:
         self.blender_data["frame_step"] = self.frame_step
         self.blender_data["is_frame_step"] = True if self.frame_step > 1 else False
         
+        self.enable_notifications = bpy.context.scene.render_panel_props.enable_notifications
+        
         ## Desktop ##
+        self.is_desktop = bpy.context.scene.render_panel_props.is_desktop if self.enable_notifications else False
         self.is_custom_sound = bpy.context.preferences.addons[addon_name].preferences.custom_sound
         self.desktop_sound_path = bpy.context.preferences.addons[addon_name].preferences.desktop_sound_path
-        self.is_desktop = bpy.context.scene.render_panel_props.is_desktop
         self.desktop_start = bpy.context.scene.render_panel_props.desktop_start
         self.desktop_first = bpy.context.scene.render_panel_props.desktop_first
         self.desktop_completion = bpy.context.scene.render_panel_props.desktop_completion
@@ -729,18 +751,22 @@ class RenderNotifier:
         else:
             self.tmp_output_path = bpy.context.preferences.addons[addon_name].preferences.tmp_output_path
             
+        self.is_discord = bpy.context.scene.render_panel_props.is_discord if self.enable_notifications else False
         self.first_rendered_frame_path = bpy.context.preferences.addons[addon_name].preferences.tmp_output_path
+        self.mid_rendered_frame_path = self.first_rendered_frame_path
         self.discord_webhook_name = bpy.context.preferences.addons[addon_name].preferences.discord_webhook_name
         self.discord_webhook_url = bpy.context.preferences.addons[addon_name].preferences.discord_webhook_url
-        self.is_discord = bpy.context.scene.render_panel_props.is_discord
         self.discord_preview = bpy.context.scene.render_panel_props.discord_preview
-        
-        if self.is_discord:
+        self.discord_jpg_preview = bpy.context.scene.render_panel_props.discord_jpg_preview
+        self.discord_preview_every_frame = bpy.context.scene.render_panel_props.discord_preview_every_frame
+
+        if self.is_discord and self.enable_notifications:
             print("Starting process...")
             self.blender_data["discord_webhook_url"] = self.discord_webhook_url
             self.blender_data["discord_webhook_name"] = self.discord_webhook_name
             self.blender_data["discord_preview"] = self.discord_preview
             self.blender_data["first_rendered_frame_path"] = self.first_rendered_frame_path
+            self.blender_data["mid_rendered_frame_path"] = self.mid_rendered_frame_path
             # Use sys.executable and the addon path to ensure we run the project's sub.py
             addon_dir = os.path.dirname(__file__)
             discord_process = os.path.join(addon_dir, "discord_process.py")
@@ -762,15 +788,15 @@ class RenderNotifier:
             )
         
         ## Webhook ##
+        self.is_third_party_webhook = bpy.context.scene.render_panel_props.is_third_party_webhook if self.enable_notifications else False
         self.third_party_webhook_url = bpy.context.preferences.addons[addon_name].preferences.third_party_webhook_url
-        self.is_third_party_webhook = bpy.context.scene.render_panel_props.is_third_party_webhook
         self.third_party_webhook_every_frame = bpy.context.scene.render_panel_props.third_party_webhook_every_frame
         self.third_party_webhook_start = bpy.context.scene.render_panel_props.third_party_webhook_start
         self.third_party_webhook_first = bpy.context.scene.render_panel_props.third_party_webhook_first
         self.third_party_webhook_completion = bpy.context.scene.render_panel_props.third_party_webhook_completion
         self.third_party_webhook_cancel = bpy.context.scene.render_panel_props.third_party_webhook_cancel
         
-        self.is_simple_third_party_webhook = bpy.context.scene.render_panel_props.is_simple_third_party_webhook
+        self.is_simple_third_party_webhook = bpy.context.scene.render_panel_props.is_simple_third_party_webhook if self.enable_notifications else False
         self.is_third_party_simple_render_data = bpy.context.scene.render_panel_props.simple_render_data
         self.is_third_party_custom_message = bpy.context.scene.render_panel_props.custom_message
         
@@ -805,7 +831,8 @@ class RenderNotifier:
         self.current_frame = bpy.context.scene.frame_current
         #self.blender_data["frame"] = bpy.context.scene.frame_current
         self.blender_data["isfirst_frame"] = self.current_frame == bpy.context.scene.frame_start
-        self.isfirst_frame = self.current_frame == bpy.context.scene.frame_start
+        self.is_first_frame = self.current_frame == bpy.context.scene.frame_start
+        self.is_mid_frame = self.current_frame != bpy.context.scene.frame_start and self.is_animation == True
         # check if the render job is an animation or a still image 
         if self.current_frame == bpy.context.scene.frame_start:
             self.is_animation = True
@@ -892,7 +919,7 @@ class RenderNotifier:
                     self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
                     
                     if self.discord_preview and self.is_discord: # save first frame if discord preview is enabled
-                        first_filename = self.tmp_output_name_frist + self.file_extension
+                        first_filename = self.tmp_output_name_first + self.file_extension
                         self.blender_data['final_first_path'] = self.final_first_path = os.path.join(self.first_rendered_frame_path, first_filename)
                     
                         
@@ -900,23 +927,29 @@ class RenderNotifier:
                             # Prefer copying the file that Blender wrote to disk (most reliable).
                             self.blender_data["frame"] = current_frame
                             self.blender_data["isfirst_frame"] = True
-                            try:
-                                src = getattr(self, 'rendered_frame_path', None)
-                                print(f"Rendered frame path: {src}")
-                                if src and os.path.isfile(src):
-                                    os.makedirs(os.path.dirname(self.final_first_path), exist_ok=True)
-                                    shutil.copy2(src, self.final_first_path)
-                                    print(f"✅ First frame copied from: {src} -> {self.final_first_path}")
-                                    self.send_webhook_non_blocking(frame=True,isfirstframe=True,blender_data=self.blender_data)
-                                    return None
-                            except Exception as e:
-                                print(f"⚠️ Failed to copy first frame: {e}")
+                            if not self.discord_jpg_preview:
+                                try:
+                                    src = getattr(self, 'rendered_frame_path', None)
+                                    print(f"Rendered frame path: {src}")
+                                    if src and os.path.isfile(src):
+                                        os.makedirs(os.path.dirname(self.final_first_path), exist_ok=True)
+                                        shutil.copy2(src, self.final_first_path)
+                                        print(f"✅ First frame copied from: {src} -> {self.final_first_path}")
+                                        self.send_webhook_non_blocking(frame=True,isfirstframe=True,blender_data=self.blender_data)
+                                        return None
+                                except Exception as e:
+                                    print(f"⚠️ Failed to copy first frame: {e}")
                             
                             image = bpy.data.images.get('Render Result')
                             if image and image.has_data:
                                 try:
                                     os.makedirs(os.path.dirname(self.final_first_path), exist_ok=True)
-                                    image.save_render(self.final_first_path)
+                                    if self.discord_jpg_preview:
+                                        image.filepath_raw = self.final_first_path
+                                        image.file_format = 'JPEG'
+                                        image.save()
+                                    else:
+                                        image.save_render(self.final_first_path)
                                     print(f"✅ First frame saved to: {self.final_first_path}")
                                     self.send_webhook_non_blocking(frame=True,isfirstframe=True,blender_data=self.blender_data)
                                 except Exception as e:
@@ -968,6 +1001,56 @@ class RenderNotifier:
                                 self.send_webhook_non_blocking(frame=True,blender_data=self.blender_data)
                             except Exception as e:
                                 print(f"error in re_post when sending discord: {e}")
+                        
+                        if self.discord_preview and self.discord_preview_every_frame and self.is_discord: # save first frame if discord preview is enabled
+                            mid_filename = self.tmp_output_name_mid + self.file_extension
+                            self.blender_data['final_mid_path'] = self.final_mid_path = os.path.join(self.mid_rendered_frame_path, mid_filename)
+                        
+                        
+                            def delayed_mid_frame_save():
+                                # Prefer copying the file that Blender wrote to disk (most reliable).
+                                self.blender_data["frame"] = current_frame
+                                self.blender_data["ismid_frame"] = True
+                                if not self.discord_jpg_preview:
+                                    try:
+                                        src = getattr(self, 'rendered_frame_path', None)
+                                        print(f"Rendered frame path: {src}")
+                                        if src and os.path.isfile(src):
+                                            os.makedirs(os.path.dirname(self.final_mid_path), exist_ok=True)
+                                            shutil.copy2(src, self.final_mid_path)
+                                            print(f"✅ Mid frame copied from: {src} -> {self.final_mid_path}")
+                                            self.send_webhook_non_blocking(frame=True,ismidframe=True,blender_data=self.blender_data)
+                                            return None
+                                    except Exception as e:
+                                        print(f"⚠️ Failed to copy mid frame: {e}")
+                        
+                                image = bpy.data.images.get('Render Result')
+                                if image and image.has_data:
+                                    try:
+                                        os.makedirs(os.path.dirname(self.final_mid_path), exist_ok=True)
+                                        if self.discord_jpg_preview:
+                                            image.filepath_raw = self.final_mid_path
+                                            image.file_format = 'JPEG'
+                                            image.save()
+                                        else:
+                                            image.save_render(self.final_mid_path)
+                                        print(f"✅ Mid frame saved to: {self.final_mid_path}")
+                                        self.send_webhook_non_blocking(frame=True,ismidframe=True,blender_data=self.blender_data)
+                                    except Exception as e:
+                                        print(f"❌ Failed to save mid frame (render_post): {e}")
+                                        self.blender_data['no_mid_preview'] = self.no_mid_preview = True
+                                        print(f"⚠️ Mid frame preview not available. ({self.blender_data['no_mid_preview']})")
+                                        self.send_webhook_non_blocking(frame=True,ismidframe=True,blender_data=self.blender_data)
+                                else:
+                                    print("⚠️ Render Result not available for mid frame. (render_post)")
+                                return None
+                        
+                            bpy.app.timers.register(delayed_mid_frame_save, first_interval=0.2)   
+                        elif self.is_discord and not self.discord_preview:
+                            try:
+                                self.send_webhook_non_blocking(frame=True,ismidframe=True,blender_data=self.blender_data)
+                            except Exception as e:
+                                print(f"error in re_post when sending mid frame discord: {e}")
 
                     except Exception as e:
                         print(f"Error in render post (render_post) {e}. possibly cause render job is a still image.")
@@ -1039,23 +1122,29 @@ class RenderNotifier:
         
         # Schedule save if needed
         def delayed_save():
-            try:
-                src = getattr(self, 'rendered_frame_path', None)
-                print(f"Rendered frame path: {src}")
-                if src and os.path.isfile(src):
-                    os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
-                    shutil.copy2(src, self.final_path)
-                    print(f"✅ complete frame copied from: {src} -> {self.final_path}")
-                    self.send_webhook_non_blocking(finished=True,blender_data=self.blender_data)
-                    return None
-            except Exception as e:
-                print(f"⚠️ Failed to copy first frame: {e}")
+            if not self.discord_jpg_preview:
+                try:
+                    src = getattr(self, 'rendered_frame_path', None)
+                    print(f"Rendered frame path: {src}")
+                    if src and os.path.isfile(src):
+                        os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
+                        shutil.copy2(src, self.final_path)
+                        print(f"✅ complete frame copied from: {src} -> {self.final_path}")
+                        self.send_webhook_non_blocking(finished=True,blender_data=self.blender_data)
+                        return None
+                except Exception as e:
+                    print(f"⚠️ Failed to copy first frame: {e}")
             
             image = bpy.data.images.get('Render Result')
             if image and image.has_data:
                 try:
                     os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
-                    image.save_render(self.final_path)
+                    if self.discord_jpg_preview:
+                        image.filepath_raw = self.final_path
+                        image.file_format = 'JPEG'
+                        image.save()
+                    else:
+                        image.save_render(self.final_path)
                     #print(f"✅ Saved image to: {self.final_path}")
                     if self.is_discord:
                         self.send_webhook_non_blocking(finished=True,blender_data=self.blender_data)
@@ -1123,23 +1212,29 @@ class RenderNotifier:
         
         # Schedule image saving if preview is requested
         def delayed_save():
-            try:
-                src = getattr(self, 'rendered_frame_path', None)
-                print(f"Rendered frame path: {src}")
-                if src and os.path.isfile(src):
-                    os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
-                    shutil.copy2(src, self.final_path)
-                    print(f"✅ canceled frame copied from: {src} -> {self.final_path}")
-                    self.send_webhook_non_blocking(canceled=True,blender_data=self.blender_data)
-                    return None
-            except Exception as e:
-                print(f"⚠️ Failed to copy first frame: {e}")
+            if not self.discord_jpg_preview:
+                try:
+                    src = getattr(self, 'rendered_frame_path', None)
+                    print(f"Rendered frame path: {src}")
+                    if src and os.path.isfile(src):
+                        os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
+                        shutil.copy2(src, self.final_path)
+                        print(f"✅ canceled frame copied from: {src} -> {self.final_path}")
+                        self.send_webhook_non_blocking(canceled=True,blender_data=self.blender_data)
+                        return None
+                except Exception as e:
+                    print(f"⚠️ Failed to copy first frame: {e}")
             
             image = bpy.data.images.get('Render Result')
             if image and image.has_data:
                 try:
                     os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
-                    image.save_render(self.final_path)
+                    if self.discord_jpg_preview:
+                        image.filepath_raw = self.final_path
+                        image.file_format = 'JPEG'
+                        image.save()
+                    else:
+                        image.save_render(self.final_path)
                     #print(f"✅ Saved image to: {self.final_path}")
                     
                     if self.is_discord:
@@ -1218,14 +1313,14 @@ class RenderNotifier:
                     if self.is_third_party_simple_render_data and self.job_type == "Animation":
                         payload += f"\nProject: {self.blender_data['project_name']}\nJob Type: {self.blender_data['job_type']}\nTotal Frames ({self.blender_data['frame_range']}): {self.blender_data['total_frames_stepped']}{step_frame}\nFirst Frame Time: {self.blender_data['RENDER_FIRST_FRAME']}\nEst. Render Time: {self.blender_data['est_render_job']}"
                 
-            print(payload)
+            #print(payload)
         else:
             blender_data = self.blender_data
             blender_data.pop('discord_webhook_url', None)
             blender_data.pop('discord_webhook_name', None)
             blender_data.pop('discord_preview', None)
             payload = blender_data
-            print(payload)
+            #print(payload)
         import logging
 
         # Configure logging
@@ -1236,18 +1331,18 @@ class RenderNotifier:
             try:
                 response = requests.post(self.third_party_webhook_url, json=payload, timeout=10)
                 response.raise_for_status()
+                
+                if response.status_code == 200:
+                    logger.info('Third-party webhook sent successfully!')
+                else:
+                    logger.error(f'Failed to send third-party webhook. Status code: {response.status_code}')
+                    logger.error(response.text)
             except requests.exceptions.Timeout:
                 logger.error("Third-party webhook request timed out.")
             except requests.exceptions.ConnectionError:
                 logger.error("Failed to connect to the third-party webhook URL.")
             except requests.exceptions.RequestException as e:
                 logger.error(f"An error occurred while sending the third-party webhook: {e}")
-            
-            if response.status_code == 200:
-                logger.info('Third-party webhook sent successfully!')
-            else:
-                logger.error(f'Failed to send third-party webhook. Status code: {response.status_code}')
-                logger.error(response.text)
         except Exception as e:
             logger.exception("Exception while sending third-party webhook.")
     
