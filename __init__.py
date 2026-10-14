@@ -431,7 +431,7 @@ class RENDER_PT_Discord_Notifications(RenderNotificationsPanel, Panel):
         discord_col = layout.column()
         discord_col.label(text="Configure Discord Notifications:")
         discord_col.prop(props, "discord_preview", text="Send Previews")
-        discord_col.prop(props, "discord_jpg_preview", text="Send JPG Previews")
+        #discord_col.prop(props, "discord_jpg_preview", text="Send JPG Previews")
         discord_col.prop(props, "discord_preview_every_frame", text="Preview All Frames")
         
         discord_col.prop(props, "use_custom_preview_path", text="Use Custom Preview Path")
@@ -712,6 +712,9 @@ class RenderNotifier:
         self.tmp_output_name = self.blend_filename
         self.tmp_output_name_first = self.blend_filename + " first frame"
         self.tmp_output_name_mid = self.blend_filename + " mid frame"
+        self.render_filepath = bpy.context.scene.render.filepath
+        self.render_file_format = bpy.context.scene.render.image_settings.file_format
+        self.render_color_mode = bpy.context.scene.render.image_settings.color_mode
         
         self.RENDER_START_TIME = datetime.now()
         self.blender_data['render_start_countdown'] = self.render_start_countdown = time.time()
@@ -919,8 +922,14 @@ class RenderNotifier:
                     self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
                     
                     if self.discord_preview and self.is_discord: # save first frame if discord preview is enabled
-                        first_filename = self.tmp_output_name_first + self.file_extension
+                        if self.discord_jpg_preview:
+                            img_extension = '.jpg'
+                            first_filename = self.tmp_output_name_first + img_extension
+                        else:
+                            img_extension = self.file_extension
+                            first_filename = self.tmp_output_name_first + img_extension
                         self.blender_data['final_first_path'] = self.final_first_path = os.path.join(self.first_rendered_frame_path, first_filename)
+                        self.blender_data['img_extension'] = img_extension
                     
                         
                         def delayed_first_frame_save():
@@ -945,22 +954,48 @@ class RenderNotifier:
                                 try:
                                     os.makedirs(os.path.dirname(self.final_first_path), exist_ok=True)
                                     if self.discord_jpg_preview:
-                                        image.filepath_raw = self.final_first_path
-                                        image.file_format = 'JPEG'
-                                        image.save()
+                                        bpy.context.scene.render.image_settings.file_format = "JPEG"
+                                        bpy.context.scene.render.image_settings.quality = 90
+                                        
+                                        image.save_render(filepath = self.final_first_path)
+                                        
+                                        bpy.context.scene.render.image_settings.file_format = self.render_file_format
+                                        bpy.context.scene.render.image_settings.color_mode = self.render_color_mode
                                     else:
                                         image.save_render(self.final_first_path)
                                     print(f"✅ First frame saved to: {self.final_first_path}")
                                     self.send_webhook_non_blocking(frame=True,isfirstframe=True,blender_data=self.blender_data)
                                 except Exception as e:
                                     print(f"❌ Failed to save first frame (render_post): {e}")
-                                    self.blender_data['no_first_preview'] = self.no_first_preview = True
+                                    self.blender_data['no_first_preview'] = True
                                     print(f"⚠️ First frame preview not available. ({self.blender_data['no_first_preview']})")
                                     self.send_webhook_non_blocking(frame=True,isfirstframe=True,blender_data=self.blender_data)
                             else:
                                 print("⚠️ Render Result not available for first frame. (render_post)")
                             return None
-
+                        
+                        #image = bpy.data.images.get('Render Result')
+                        #if image and image.has_data:
+                        #    try:
+                        #        os.makedirs(os.path.dirname(self.final_first_path), exist_ok=True)
+                        #        if self.discord_jpg_preview:
+                        #            bpy.context.scene.render.image_settings.file_format = "JPEG"
+                        #            bpy.context.scene.render.image_settings.quality = 90
+                        #
+                        #            image.save_render(filepath = self.final_first_path)
+                        #
+                        #            bpy.context.scene.render.image_settings.file_format = self.render_file_format
+                        #            bpy.context.scene.render.image_settings.color_mode = self.render_color_mode
+                        #        else:
+                        #            image.save_render(self.final_first_path)
+                        #        print(f"✅ First frame saved to: {self.final_first_path}")
+                        #        self.send_webhook_non_blocking(frame=True,isfirstframe=True,blender_data=self.blender_data)
+                        #    except Exception as e:
+                        #        print(f"❌ Failed to save first frame (render_post): {e}")
+                        #        self.blender_data['no_first_preview'] = True
+                        #        print(f"⚠️ First frame preview not available. ({self.blender_data['no_first_preview']})")
+                        #        self.send_webhook_non_blocking(frame=True,isfirstframe=True,blender_data=self.blender_data)
+                        #else:
                         bpy.app.timers.register(delayed_first_frame_save, first_interval=0.2)   
                     elif self.is_discord and not self.discord_preview:
                         try:
@@ -996,15 +1031,21 @@ class RenderNotifier:
                         self.blender_data["countdown"] = f"<t:{self.countdown}:R>"
                         self.blender_data["next_frame_countdown"] = f"<t:{self.current_countdown}:R>"
                         
-                        if self.is_discord:
-                            try:
-                                self.send_webhook_non_blocking(frame=True,blender_data=self.blender_data)
-                            except Exception as e:
-                                print(f"error in re_post when sending discord: {e}")
+                        #if self.is_discord:
+                        #    try:
+                        #        self.send_webhook_non_blocking(frame=True,blender_data=self.blender_data)
+                        #    except Exception as e:
+                        #        print(f"error in re_post when sending discord: {e}")
                         
                         if self.discord_preview and self.discord_preview_every_frame and self.is_discord: # save first frame if discord preview is enabled
-                            mid_filename = self.tmp_output_name_mid + self.file_extension
+                            if self.discord_jpg_preview:
+                                img_extension = '.jpg'
+                                mid_filename = self.tmp_output_name_mid + img_extension
+                            else:
+                                img_extension = self.file_extension
+                                mid_filename = self.tmp_output_name_mid + img_extension
                             self.blender_data['final_mid_path'] = self.final_mid_path = os.path.join(self.mid_rendered_frame_path, mid_filename)
+                            self.blender_data['img_extension'] = img_extension
                         
                         
                             def delayed_mid_frame_save():
@@ -1029,26 +1070,55 @@ class RenderNotifier:
                                     try:
                                         os.makedirs(os.path.dirname(self.final_mid_path), exist_ok=True)
                                         if self.discord_jpg_preview:
-                                            image.filepath_raw = self.final_mid_path
-                                            image.file_format = 'JPEG'
-                                            image.save()
+                                            bpy.context.scene.render.image_settings.file_format = "JPEG"
+                                            bpy.context.scene.render.image_settings.quality = 90
+
+                                            image.save_render(filepath = self.final_mid_path)
+                                            
+                                            bpy.context.scene.render.image_settings.file_format = self.render_file_format
+                                            bpy.context.scene.render.image_settings.color_mode = self.render_color_mode
                                         else:
                                             image.save_render(self.final_mid_path)
                                         print(f"✅ Mid frame saved to: {self.final_mid_path}")
                                         self.send_webhook_non_blocking(frame=True,ismidframe=True,blender_data=self.blender_data)
                                     except Exception as e:
                                         print(f"❌ Failed to save mid frame (render_post): {e}")
-                                        self.blender_data['no_mid_preview'] = self.no_mid_preview = True
+                                        self.blender_data['no_mid_preview'] = True
                                         print(f"⚠️ Mid frame preview not available. ({self.blender_data['no_mid_preview']})")
                                         self.send_webhook_non_blocking(frame=True,ismidframe=True,blender_data=self.blender_data)
                                 else:
                                     print("⚠️ Render Result not available for mid frame. (render_post)")
                                 return None
-                        
+
+                            
+                            #image = bpy.data.images.get('Render Result')
+                            #if image and image.has_data:
+                            #    try:
+                            #        os.makedirs(os.path.dirname(self.final_mid_path), exist_ok=True)
+                            #        if self.discord_jpg_preview:
+                            #            bpy.context.scene.render.image_settings.file_format = "JPEG"
+                            #            bpy.context.scene.render.image_settings.quality = 90
+                            #
+                            #            image.save_render(filepath = self.final_mid_path)
+                            #
+                            #            bpy.context.scene.render.image_settings.file_format = self.render_file_format
+                            #            bpy.context.scene.render.image_settings.color_mode = self.render_color_mode
+                            #        else:
+                            #            image.save_render(self.final_mid_path)
+                            #        print(f"✅ Mid frame saved to: {self.final_mid_path}")
+                            #        self.send_webhook_non_blocking(frame=True,ismidframe=True,blender_data=self.blender_data)
+                            #    except Exception as e:
+                            #        print(f"❌ Failed to save mid frame (render_post): {e}")
+                            #        self.blender_data['no_mid_preview'] = True
+                            #        print(f"⚠️ Mid frame preview not available. ({self.blender_data['no_mid_preview']})")
+                            #        self.send_webhook_non_blocking(frame=True,ismidframe=True,blender_data=self.blender_data)
+                            #else:
+                            #    bpy.app.timers.register(delayed_mid_frame_save, first_interval=0.2)   
                             bpy.app.timers.register(delayed_mid_frame_save, first_interval=0.2)   
-                        elif self.is_discord and not self.discord_preview:
+                        elif self.is_discord:# and not self.discord_preview:
+                            self.blender_data['no_mid_preview'] = True
                             try:
-                                self.send_webhook_non_blocking(frame=True,ismidframe=True,blender_data=self.blender_data)
+                                self.send_webhook_non_blocking(frame=True,blender_data=self.blender_data)
                             except Exception as e:
                                 print(f"error in re_post when sending mid frame discord: {e}")
 
@@ -1117,8 +1187,14 @@ class RenderNotifier:
             self.blender_data["job_type"] = self.job_type
         
         # Prepare image save path
-        final_filename = self.tmp_output_name + self.file_extension
+        if self.discord_jpg_preview:
+            img_extension = '.jpg'
+            final_filename = self.tmp_output_name + img_extension
+        else:
+            img_extension = self.file_extension
+            final_filename = self.tmp_output_name + img_extension
         self.blender_data['final_path'] = self.final_path = os.path.join(self.tmp_output_path, final_filename)
+        self.blender_data['img_extension'] = img_extension
         
         # Schedule save if needed
         def delayed_save():
@@ -1133,16 +1209,20 @@ class RenderNotifier:
                         self.send_webhook_non_blocking(finished=True,blender_data=self.blender_data)
                         return None
                 except Exception as e:
-                    print(f"⚠️ Failed to copy first frame: {e}")
+                    print(f"⚠️ Failed to copy complete frame: {e}")
             
-            image = bpy.data.images.get('Render Result')
+            image_org = bpy.data.images.get('Render Result')
+            image = image_org.copy()
             if image and image.has_data:
                 try:
                     os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
                     if self.discord_jpg_preview:
-                        image.filepath_raw = self.final_path
-                        image.file_format = 'JPEG'
-                        image.save()
+                        bpy.context.scene.render.image_settings.file_format = "JPEG"
+                        bpy.context.scene.render.image_settings.quality = 90
+                        image.save_render(filepath = self.final_path)
+                        
+                        bpy.context.scene.render.image_settings.file_format = self.render_file_format
+                        bpy.context.scene.render.image_settings.color_mode = self.render_color_mode
                     else:
                         image.save_render(self.final_path)
                     #print(f"✅ Saved image to: {self.final_path}")
@@ -1207,8 +1287,14 @@ class RenderNotifier:
             self.blender_data["job_type"] = self.job_type
         
         # Prepare image save path 
-        final_filename = self.tmp_output_name + self.file_extension
+        if self.discord_jpg_preview:
+            img_extension = '.jpg'
+            final_filename = self.tmp_output_name + img_extension
+        else:
+            img_extension = self.file_extension
+            final_filename = self.tmp_output_name + img_extension
         self.blender_data['final_path'] = self.final_path = os.path.join(self.tmp_output_path, final_filename)
+        self.blender_data['img_extension'] = img_extension
         
         # Schedule image saving if preview is requested
         def delayed_save():
@@ -1230,9 +1316,12 @@ class RenderNotifier:
                 try:
                     os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
                     if self.discord_jpg_preview:
-                        image.filepath_raw = self.final_path
-                        image.file_format = 'JPEG'
-                        image.save()
+                        bpy.context.scene.render.image_settings.file_format = "JPEG"
+                        bpy.context.scene.render.image_settings.quality = 90
+                        image.save_render(filepath = self.final_path)
+                        
+                        bpy.context.scene.render.image_settings.file_format = self.render_file_format
+                        bpy.context.scene.render.image_settings.color_mode = self.render_color_mode
                     else:
                         image.save_render(self.final_path)
                     #print(f"✅ Saved image to: {self.final_path}")
@@ -1278,6 +1367,7 @@ class RenderNotifier:
             step_frame = ""
 
         
+        payload = self.blender_data
         print(self.is_third_party_simple_render_data)
         if self.is_simple_third_party_webhook:
             match stage:
@@ -1319,7 +1409,6 @@ class RenderNotifier:
             blender_data.pop('discord_webhook_url', None)
             blender_data.pop('discord_webhook_name', None)
             blender_data.pop('discord_preview', None)
-            payload = blender_data
             #print(payload)
         import logging
 
@@ -1396,7 +1485,7 @@ def register():
         bpy.utils.register_class(cls)
 
     bpy.types.Scene.render_panel_props = bpy.props.PointerProperty(type=Render_Notifications_Properties)
- 
+
     bpy.app.handlers.render_init.append(notifier_instance.render_init)         # Called when render starts
     bpy.app.handlers.render_post.append(notifier_instance.render_post)         # Called after each frame is rendered
     bpy.app.handlers.render_pre.append(notifier_instance.render_pre)           # Called just before rendering starts
