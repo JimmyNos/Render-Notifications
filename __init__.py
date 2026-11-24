@@ -548,6 +548,8 @@ class RenderNotifier:
         self.tmp_output_name_first = ""
         self.tmp_output_name_mid = ""
         
+        self.discord_jpg_preview = False
+        
         self.is_less_than = False
         self.is_skip_frame = False
         self.skip_frame = 0
@@ -1211,8 +1213,7 @@ class RenderNotifier:
                 except Exception as e:
                     print(f"⚠️ Failed to copy complete frame: {e}")
             
-            image_org = bpy.data.images.get('Render Result')
-            image = image_org.copy()
+            image = bpy.data.images.get('Render Result')
             if image and image.has_data:
                 try:
                     os.makedirs(os.path.dirname(self.final_path), exist_ok=True)
